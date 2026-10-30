@@ -6,7 +6,8 @@
 - **Telas (etapa 3):** Hoje, Histórico, Relatórios e Ajustes em Compose; formulários de frete, abastecimento e despesa; calculadora isolada; estrada da Fiorino em Canvas; gráficos de lucro por dia e combustível em 6 meses; resumo para o WhatsApp; letra A/A+/A++.
 - **Contas do mês (etapa 4):** cadastrar, só este mês, deste mês em diante, pular/retomar e pausar; WorkManager a cada 12 h e a abertura do app usam a mesma geração idempotente.
 - **Cópia (etapa 5):** arquivo `.fretes` versão 1 pelo seletor do Android, senha opcional (AES-256-GCM, PBKDF2-SHA256 210 mil), gravação conferida lendo de volta, restauração validada e transacional, cópia interna dos dados anteriores para poder voltar, lembrete semanal.
-- **Testes:** 66 no `:core` (27 novos) e, no `:app`, testes do repositório com Room em memória e de fluxos de tela, os dois com Robolectric. Rodam no GitHub Actions. **Nenhum teste em aparelho ou emulador.**
+- **Testes:** 66 no `:core` (27 novos) e 17 no `:app` (11 do repositório com Room em memória, 6 de fluxos de tela), com Robolectric. Verdes no GitHub Actions. **Nenhum teste em aparelho ou emulador.**
+- ViewModel criado por fábrica explícita com a `Application` da Activity (a fábrica padrão guardava a primeira `Application` numa variável estática e os testes de tela viam o banco de outro teste).
 - DataStore criado por instância da `Application`; agendador não derruba o app se falhar.
 
 ## 30/10/2026 — Início do Android

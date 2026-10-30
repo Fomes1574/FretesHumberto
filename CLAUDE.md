@@ -10,7 +10,7 @@ App Android offline para um motorista de Fiorino de 52 anos anotar fretes, abast
 
 ## Onde estamos
 
-- **Etapas 1 a 5 do [PLANO_ANDROID.md](docs/PLANO_ANDROID.md) com código pronto e testado na JVM** (30/10/2026): banco Room, telas, contas do mês com WorkManager, cópia de segurança. CI verde gera o APK debug.
+- **Etapas 1 a 5 do [PLANO_ANDROID.md](docs/PLANO_ANDROID.md) com código pronto e testado na JVM** (30/10/2026): banco Room, telas, contas do mês com WorkManager, cópia de segurança. CI verde (66 testes no `:core`, 17 no `:app`) gera o APK debug.
 - **Nada foi conferido num celular ainda.** As caixas `[ ]` que sobram são, quase todas, testes no aparelho e a etapa 6 (chave de assinatura, instalação, piloto).
 - A próxima tarefa é sempre a primeira caixa `[ ]` do PLANO_ANDROID.md.
 - Decisões técnicas fechadas: [docs/DECISOES.md](docs/DECISOES.md) → "Decisões técnicas fechadas em 30/10/2026". Não reabrir.

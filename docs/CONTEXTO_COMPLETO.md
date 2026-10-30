@@ -135,7 +135,7 @@ App Android offline para um motorista de Fiorino de 52 anos anotar fretes, abast
 
 ### Onde estamos
 
-- **Etapas 1 a 5 do [PLANO_ANDROID.md](PLANO_ANDROID.md) com código pronto e testado na JVM** (30/10/2026): banco Room, telas, contas do mês com WorkManager, cópia de segurança. CI verde gera o APK debug.
+- **Etapas 1 a 5 do [PLANO_ANDROID.md](PLANO_ANDROID.md) com código pronto e testado na JVM** (30/10/2026): banco Room, telas, contas do mês com WorkManager, cópia de segurança. CI verde (66 testes no `:core`, 17 no `:app`) gera o APK debug.
 - **Nada foi conferido num celular ainda.** As caixas `[ ]` que sobram são, quase todas, testes no aparelho e a etapa 6 (chave de assinatura, instalação, piloto).
 - A próxima tarefa é sempre a primeira caixa `[ ]` do PLANO_ANDROID.md.
 - Decisões técnicas fechadas: [docs/DECISOES.md](DECISOES.md) → "Decisões técnicas fechadas em 30/10/2026". Não reabrir.
@@ -1300,10 +1300,12 @@ Rodam no GitHub Actions com `./gradlew :core:test :app:testDebugUnitTest :app:as
 |---|---|---|
 | `core/.../RegrasTest.kt` (39) | JVM | Casos de referência do protótipo |
 | `core/.../AppTest.kt` (27) | JVM | Campo de valor colado, diferença gravada no banco, contas do mês (só este mês, deste mês em diante, pular, pausar, retomar um mês), filtro e textos dos relatórios, comparação, dois dias, resumo do WhatsApp, histórico, conferência, lembrete de cópia, cópia com e sem senha, senha errada, adulteração, arquivo cortado, versão futura, dados incoerentes |
-| `app/.../data/RepositorioTest.kt` | Robolectric + Room em memória | Salvar e reler igual, toque duplo sem duplicar, apagar/mover frete sem mexer nos gastos, desfazer uma vez, conferência desatualizada, falha no meio desfaz tudo, 8 gerações de contas simultâneas sem duplicar, mês pulado, metas históricas, restaurar e falha na restauração mantendo os dados |
-| `app/.../ui/FluxosTest.kt` | Robolectric + Compose | Abre a `MainActivity`: R$ 285 − 40 − 20 = R$ 225 com "Faltam R$ 25,00"; apagar frete mantém a despesa e Desfazer; "R$ 1.234,56" colado; calculadora sem gravar; abas e A++; conta do mês lançada |
+| `app/.../data/RepositorioTest.kt` (11) | Robolectric + Room em memória | Salvar e reler igual, toque duplo sem duplicar, apagar/mover frete sem mexer nos gastos, desfazer uma vez, conferência desatualizada, falha no meio desfaz tudo, 8 gerações de contas simultâneas sem duplicar, mês pulado, metas históricas, restaurar e falha na restauração mantendo os dados |
+| `app/.../ui/FluxosTest.kt` (6) | Robolectric + Compose | Abre a `MainActivity`: R$ 285 − 40 − 20 = R$ 225 com "Faltam R$ 25,00"; apagar frete mantém a despesa e Desfazer; "R$ 1.234,56" colado; calculadora sem gravar; abas e A++; conta do mês lançada |
 
-Robolectric roda o Android na JVM (SDK 35). Ele não prova: toque real, teclado, TalkBack, desempenho, seletor de arquivos de verdade, WorkManager com o app fechado, instalação ou atualização do APK.
+**Resultado:** verde no GitHub Actions em 30/10/2026 (run 9, commit `ac077d3`): 66 testes do `:core`, 17 do `:app`, esquema do banco conferido e APK debug gerado (artefato `meus-fretes-debug`).
+
+Robolectric roda o Android na JVM (SDK 35, tela de 411×891 dp). Ele não prova: toque real, teclado, TalkBack, desempenho, seletor de arquivos de verdade, WorkManager com o app fechado, instalação ou atualização do APK.
 
 ### Testes Kotlin do módulo `:core` (30/10/2026)
 
@@ -1456,7 +1458,8 @@ Documento-fonte: [CHANGELOG.md](../CHANGELOG.md)
 - **Telas (etapa 3):** Hoje, Histórico, Relatórios e Ajustes em Compose; formulários de frete, abastecimento e despesa; calculadora isolada; estrada da Fiorino em Canvas; gráficos de lucro por dia e combustível em 6 meses; resumo para o WhatsApp; letra A/A+/A++.
 - **Contas do mês (etapa 4):** cadastrar, só este mês, deste mês em diante, pular/retomar e pausar; WorkManager a cada 12 h e a abertura do app usam a mesma geração idempotente.
 - **Cópia (etapa 5):** arquivo `.fretes` versão 1 pelo seletor do Android, senha opcional (AES-256-GCM, PBKDF2-SHA256 210 mil), gravação conferida lendo de volta, restauração validada e transacional, cópia interna dos dados anteriores para poder voltar, lembrete semanal.
-- **Testes:** 66 no `:core` (27 novos) e, no `:app`, testes do repositório com Room em memória e de fluxos de tela, os dois com Robolectric. Rodam no GitHub Actions. **Nenhum teste em aparelho ou emulador.**
+- **Testes:** 66 no `:core` (27 novos) e 17 no `:app` (11 do repositório com Room em memória, 6 de fluxos de tela), com Robolectric. Verdes no GitHub Actions. **Nenhum teste em aparelho ou emulador.**
+- ViewModel criado por fábrica explícita com a `Application` da Activity (a fábrica padrão guardava a primeira `Application` numa variável estática e os testes de tela viam o banco de outro teste).
 - DataStore criado por instância da `Application`; agendador não derruba o app se falhar.
 
 ### 30/10/2026 — Início do Android
