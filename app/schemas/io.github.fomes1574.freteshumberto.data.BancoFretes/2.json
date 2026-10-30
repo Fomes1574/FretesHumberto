@@ -1,0 +1,322 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "dc6dde7d1665943d1312fec1d98fdadf",
+    "entities": [
+      {
+        "tableName": "lancamento",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `tipo` TEXT NOT NULL, `data` TEXT NOT NULL, `valor` INTEGER NOT NULL, `descricao` TEXT NOT NULL, `kmCentesimos` INTEGER, `minutos` INTEGER, `litrosCentesimos` INTEGER, `precoLitro` INTEGER, `modoAbastecimento` TEXT, `categoria` TEXT, `ocorrencia` TEXT, `criadoEm` TEXT NOT NULL, `editadoEm` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "data",
+            "columnName": "data",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "valor",
+            "columnName": "valor",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descricao",
+            "columnName": "descricao",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kmCentesimos",
+            "columnName": "kmCentesimos",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "minutos",
+            "columnName": "minutos",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "litrosCentesimos",
+            "columnName": "litrosCentesimos",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "precoLitro",
+            "columnName": "precoLitro",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "modoAbastecimento",
+            "columnName": "modoAbastecimento",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "categoria",
+            "columnName": "categoria",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "ocorrencia",
+            "columnName": "ocorrencia",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "criadoEm",
+            "columnName": "criadoEm",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "editadoEm",
+            "columnName": "editadoEm",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_lancamento_data",
+            "unique": false,
+            "columnNames": [
+              "data"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_lancamento_data` ON `${TABLE_NAME}` (`data`)"
+          },
+          {
+            "name": "index_lancamento_ocorrencia",
+            "unique": true,
+            "columnNames": [
+              "ocorrencia"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_lancamento_ocorrencia` ON `${TABLE_NAME}` (`ocorrencia`)"
+          }
+        ]
+      },
+      {
+        "tableName": "conta",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `inicio` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "inicio",
+            "columnName": "inicio",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "conta_versao",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`contaId` TEXT NOT NULL, `desde` TEXT NOT NULL, `nome` TEXT NOT NULL, `valor` INTEGER NOT NULL, `dia` INTEGER NOT NULL, `ativa` INTEGER NOT NULL, `categoria` TEXT NOT NULL, `fim` TEXT, PRIMARY KEY(`contaId`, `desde`), FOREIGN KEY(`contaId`) REFERENCES `conta`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "contaId",
+            "columnName": "contaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "desde",
+            "columnName": "desde",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nome",
+            "columnName": "nome",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "valor",
+            "columnName": "valor",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dia",
+            "columnName": "dia",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ativa",
+            "columnName": "ativa",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "categoria",
+            "columnName": "categoria",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fim",
+            "columnName": "fim",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "contaId",
+            "desde"
+          ]
+        },
+        "foreignKeys": [
+          {
+            "table": "conta",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "contaId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "ocorrencia",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`contaId` TEXT NOT NULL, `mes` TEXT NOT NULL, `status` TEXT NOT NULL, `lancamentoId` TEXT, `altData` TEXT, `altValor` INTEGER, `altDescricao` TEXT, `altCategoria` TEXT, PRIMARY KEY(`contaId`, `mes`))",
+        "fields": [
+          {
+            "fieldPath": "contaId",
+            "columnName": "contaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mes",
+            "columnName": "mes",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lancamentoId",
+            "columnName": "lancamentoId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "altData",
+            "columnName": "altData",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "altValor",
+            "columnName": "altValor",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "altDescricao",
+            "columnName": "altDescricao",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "altCategoria",
+            "columnName": "altCategoria",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "contaId",
+            "mes"
+          ]
+        }
+      },
+      {
+        "tableName": "meta_diaria",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`desde` TEXT NOT NULL, `valor` INTEGER NOT NULL, PRIMARY KEY(`desde`))",
+        "fields": [
+          {
+            "fieldPath": "desde",
+            "columnName": "desde",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "valor",
+            "columnName": "valor",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "desde"
+          ]
+        }
+      },
+      {
+        "tableName": "ajuste",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`chave` TEXT NOT NULL, `valor` TEXT NOT NULL, PRIMARY KEY(`chave`))",
+        "fields": [
+          {
+            "fieldPath": "chave",
+            "columnName": "chave",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "valor",
+            "columnName": "valor",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "chave"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'dc6dde7d1665943d1312fec1d98fdadf')"
+    ]
+  }
+}
