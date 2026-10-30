@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meus Fretes — protótipo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F0E8; --card:#FFFFFF; --ink:#191D1B; --muted:#565D59; --line:#DDD7CA;
+  --green:#17603F; --greenSoft:#DCEFE3; --fuel:#A8500B; --fuelSoft:#FBE6D1;
+  --red:#A9221B; --redSoft:#F9E0DE; --road:#2C312E; --blue:#1F4E79;
+  --fs:18px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:var(--fs)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Atkinson Hyperlegible",system-ui,sans-serif;line-height:1.35}
+button,input,select{font:inherit;color:inherit}
+.wrap{max-width:520px;margin:0 auto;padding:16px 16px 110px}
+h1{font-size:1.15rem;margin:0}
+.top{display:flex;justify-content:space-between;align-items:center;margin:4px 0 14px}
+.date{color:var(--muted);font-size:.95rem}
+.demo{background:#FFF6C9;border:1px solid #E8D77A;border-radius:12px;padding:10px 12px;font-size:.85rem;margin-bottom:14px;display:flex;gap:10px;align-items:center;justify-content:space-between}
+.demo button{background:none;border:1px solid #9C8A2A;border-radius:10px;padding:8px 10px;font-size:.8rem;min-height:44px}
+.card{background:var(--card);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 1px 0 var(--line)}
+.label{font-size:.9rem;color:var(--muted);font-weight:700;letter-spacing:.02em}
+.big{font-size:2.6rem;font-weight:700;letter-spacing:-.01em;margin:2px 0 4px;font-variant-numeric:tabular-nums}
+.neg{color:var(--red)}
+.pos{color:var(--green)}
+.metaTxt{font-size:1.05rem;font-weight:700;margin-top:4px}
+/* cena da meta */
+.scene{width:100%;height:auto;display:block;margin:14px 0 6px}
+.roadLbl{display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted)}
+/* botões */
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.btn{border:0;border-radius:16px;min-height:60px;padding:12px;font-weight:700;font-size:1rem;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer}
+.btn.main{grid-column:1/-1;background:var(--green);color:#fff;min-height:68px;font-size:1.15rem}
+.btn.fuel{background:var(--fuelSoft);color:#6E3305}
+.btn.soft{background:#E7E3D8}
+.btn.line{background:#fff;border:2px solid var(--line)}
+.btn:active{transform:scale(.98)}
+.btn svg{width:26px;height:26px;flex:none}
+/* contas */
+.row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);gap:10px}
+.row:last-child{border-bottom:0}
+.row .v{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.row.total{font-size:1.15rem;border-top:2px solid var(--ink);border-bottom:0;margin-top:4px}
+.sub{font-size:.82rem;color:var(--muted)}
+.tag{display:inline-block;font-size:.75rem;font-weight:700;border-radius:8px;padding:2px 8px;margin-right:6px}
+.t-viagem{background:var(--greenSoft);color:var(--green)}
+.t-abast{background:var(--fuelSoft);color:#7A3A06}
+.t-despesa{background:#E6E8EE;color:#2D3A55}
+.entry{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.entry:last-child{border-bottom:0}
+.entry .info{flex:1;min-width:0}
+.entry .info b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.icon-btn{background:#F0EDE5;border:0;border-radius:12px;min-width:48px;min-height:48px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.icon-btn svg{width:22px;height:22px}
+h2{font-size:1.05rem;margin:0 0 6px}
+/* segmentos */
+.seg{display:flex;background:#E4DFD3;border-radius:14px;padding:4px;margin-bottom:12px}
+.seg button{flex:1;border:0;background:none;border-radius:11px;min-height:50px;font-weight:700;cursor:pointer}
+.seg button[aria-pressed=true]{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.period{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
+.period .p{text-align:center;font-weight:700;flex:1}
+.badge{display:inline-block;background:#FFF0B8;color:#5D4B00;border-radius:8px;font-size:.75rem;padding:2px 8px;margin-left:4px;vertical-align:middle}
+.cmp{font-size:.92rem;color:var(--muted);margin-top:2px}
+.chart svg{width:100%;height:auto;display:block}
+.tip{min-height:1.6em;text-align:center;font-weight:700;margin-top:6px}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kpi{background:#F6F4EE;border-radius:14px;padding:12px}
+.kpi .n{font-size:1.3rem;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi .l{font-size:.8rem;color:var(--muted)}
+.fuelCard{background:var(--fuelSoft)}
+.fuelCard .kpi{background:#fff8f0}
+/* histórico */
+.mhead{font-weight:700;color:var(--muted);margin:18px 4px 8px;display:flex;justify-content:space-between}
+.day{display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:14px;padding:14px;margin-bottom:8px;border:0;width:100%;text-align:left;cursor:pointer;min-height:64px}
+.dot{width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
+/* nav */
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom);z-index:5}
+nav .in{display:flex;max-width:520px;width:100%}
+nav button{flex:1;border:0;background:none;min-height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:.8rem;font-weight:700;color:var(--muted);cursor:pointer}
+nav button svg{width:26px;height:26px}
+nav button[aria-current=page]{color:var(--green)}
+nav button[aria-current=page] .pill{background:var(--greenSoft)}
+nav .pill{border-radius:14px;padding:3px 16px;display:flex}
+/* folha */
+.sheetBg{position:fixed;inset:0;background:rgba(20,22,21,.45);display:none;z-index:10;align-items:flex-end;justify-content:center}
+.sheetBg.open{display:flex}
+.sheet{background:var(--bg);width:100%;max-width:520px;max-height:94vh;overflow:auto;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+.sheet h3{margin:0 0 12px;font-size:1.25rem;display:flex;justify-content:space-between;align-items:center}
+.field{margin-bottom:14px}
+.field label{display:block;font-weight:700;margin-bottom:6px}
+.field input,.field select{width:100%;min-height:58px;border:2px solid var(--line);border-radius:14px;padding:10px 14px;background:#fff;font-size:1.1rem}
+.field input:focus{outline:3px solid #8CC5A6;border-color:var(--green)}
+.money{position:relative}
+.money span{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-weight:700;color:var(--muted)}
+.money input{padding-left:48px;font-size:1.5rem;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{border:2px solid var(--line);background:#fff;border-radius:12px;min-height:48px;padding:6px 14px;font-weight:700;cursor:pointer}
+.chips button[aria-pressed=true]{border-color:var(--blue);background:#E3ECF6;color:var(--blue)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+details{margin-bottom:14px}
+summary{font-weight:700;min-height:48px;display:flex;align-items:center;cursor:pointer;color:var(--blue)}
+.err{color:var(--red);font-weight:700;min-height:1.2em;margin-bottom:8px}
+.fuelRes{background:#fff;border-radius:14px;padding:12px 14px;margin:-4px 0 14px;display:flex;flex-direction:column;gap:2px;min-height:58px;justify-content:center}
+.fuelRes b{font-size:1.4rem;color:#7A3A06}
+.calcOut{background:#fff;border-radius:16px;padding:14px;margin-bottom:14px}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:14px;padding:12px 16px;display:none;align-items:center;gap:14px;z-index:20;max-width:92%}
+.toast.show{display:flex}
+.toast button{background:none;border:0;color:#9FE0BC;font-weight:700;min-height:44px;cursor:pointer}
+.empty{text-align:center;color:var(--muted);padding:18px 8px}
+.fontBtns{display:flex;gap:8px}
+.fontBtns button{flex:1}
+textarea.copy{width:100%;min-height:180px;border-radius:12px;border:2px solid var(--line);padding:10px;font:inherit;font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="wrap" id="main"></div>
+
+<nav><div class="in" id="nav"></div></nav>
+
+<div class="sheetBg" id="sheetBg"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" role="status"><span id="toastTxt"></span><button id="toastBtn" type="button"></button></div>
+
+<script>
+/* ---------- ícones ---------- */
+const I={
+ van:'<svg viewBox="0 0 64 36" aria-hidden="true"><path d="M4 8a4 4 0 0 1 4-4h30a3 3 0 0 1 3 3v3h9c1.6 0 3 .8 3.8 2.1l5.6 8.4c.4.6.6 1.3.6 2V27a3 3 0 0 1-3 3H6a2 2 0 0 1-2-2z" fill="#F7F7F2" stroke="#191D1B" stroke-width="2.5"/><path d="M42 13h7.5l5 7H42z" fill="#9CC8E6" stroke="#191D1B" stroke-width="2"/><rect x="8" y="10" width="28" height="3" rx="1.5" fill="#17603F"/><circle cx="16" cy="30" r="5" fill="#191D1B"/><circle cx="16" cy="30" r="2" fill="#ccc"/><circle cx="48" cy="30" r="5" fill="#191D1B"/><circle cx="48" cy="30" r="2" fill="#ccc"/></svg>',
+ plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+ fuel:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16M3 21h13M6 9h7"/><path d="M15 8l3 3v6a1.5 1.5 0 0 0 3 0V9l-3-3"/></svg>',
+ bill:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>',
+ calc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01" stroke-linecap="round" stroke-width="2.4"/></svg>',
+ home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+ list:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="4" width="16" height="17" rx="2"/><path d="M8 2v4M16 2v4M4 10h16"/></svg>',
+ chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 20h16M7 16v-5M12 16V6M17 16v-8"/></svg>',
+ gear:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+ trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+ left:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M15 5l-7 7 7 7"/></svg>',
+ right:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M9 5l7 7-7 7"/></svg>',
+ x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+ copy:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>'
+};
+
+/* ---------- utilidades ---------- */
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const pd=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const addD=(s,n)=>{const d=pd(s);d.setDate(d.getDate()+n);return iso(d)};
+const TODAY=iso(new Date());
+const DOW=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const DOWL=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+const MES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const MESC=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const R=c=>(c/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const R0=c=>'R$ '+Math.round(c/100).toLocaleString('pt-BR');
+const dm=s=>{const d=pd(s);return pad(d.getDate())+'/'+pad(d.getMonth()+1)};
+const longDate=s=>{const d=pd(s);return `${DOWL[d.getDay()]}, ${d.getDate()} de ${MES[d.getMonth()]}`};
+const shortDate=s=>{const d=pd(s);return `${DOW[d.getDay()]}, ${d.getDate()} ${MESC[d.getMonth()]}`};
+function parseMoney(v){if(v==null)return NaN;v=String(v).trim().replace(/[R$\s]/g,'');if(!v)return NaN;
+  if(v.includes(','))v=v.replace(/\./g,'').replace(',','.');const n=Number(v);return isFinite(n)?Math.round(n*100):NaN}
+function parseNum(v){v=String(v||'').trim().replace(',','.');const n=Number(v);return v&&isFinite(n)?n:NaN}
+const inp=(n,d=2)=>(Math.round(n*10**d)/10**d).toFixed(d).replace('.',',');
+const brNum=(n,d=1)=>n.toLocaleString('pt-BR',{maximumFractionDigits:d,minimumFractionDigits:d});
+const esc=s=>String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+/* ---------- dados ---------- */
+const KEY='meusfretes_proto_v2';
+let S;
+function defaults(){return{settings:{metaDia:25000,metaMes:550000,kml:8.5,preco:379,fs:18},lanc:[],demo:true}}
+function seed(){
+  let a=20261029;const r=()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+  const desc=['Entrega no Centro','Mudança pequena','Coleta em loja de material','Entregas de e-commerce','Frete de móveis','Distribuidora de bebidas','Entrega em condomínio','Coleta na transportadora'];
+  const out=[];let acc=0;let start=addD(TODAY,-62);
+  for(let d=start;d<=TODAY;d=addD(d,1)){
+    const w=pd(d).getDay(); if(w===0)continue; if(r()<.07&&d!==TODAY)continue;
+    let n=d===TODAY?2:2+Math.floor(r()*(w===6?2:4));
+    for(let i=0;i<n;i++){const km=Math.round(12+r()*55);const v=Math.round((55+r()*150)/5)*5*100;
+      out.push({id:uid(),tipo:'viagem',data:d,valor:v,desc:desc[Math.floor(r()*desc.length)],km,min:Math.round(km*2.1+15)});acc+=km}
+    if(acc>=230&&d!==TODAY){const pr=365+Math.round(r()*24);const v=Math.round(acc/8.4*pr/1000)*1000;out.push({id:uid(),tipo:'abast',data:d,valor:v,litros:Math.round(v/pr*100)/100,preco:pr,desc:'Posto'});acc=0}
+    if(r()<.18)out.push({id:uid(),tipo:'despesa',data:d,valor:1240,cat:'Pedágio',desc:''});
+    if(r()<.06)out.push({id:uid(),tipo:'despesa',data:d,valor:Math.round(8+r()*12)*100,cat:'Estacionamento',desc:''});
+  }
+  out.push({id:uid(),tipo:'despesa',data:addD(TODAY,-20),valor:21000,cat:'Manutenção',desc:'Troca de óleo e filtro'});
+  out.push({id:uid(),tipo:'despesa',data:addD(TODAY,-41),valor:16000,cat:'Manutenção',desc:'Pastilha de freio'});
+  return out;
+}
+function load(){try{const j=localStorage.getItem(KEY);if(j){S=JSON.parse(j);return}}catch(e){}
+  S=defaults();S.lanc=seed()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+load();
+
+/* ---------- cálculos ---------- */
+function resumo(de,ate){
+  const o={fretes:0,nF:0,comb:0,nA:0,litros:0,outras:0,km:0,min:0,lucroKm:0,porDia:{},trab:new Set(),cats:{}};
+  for(const l of S.lanc){ if(l.data<de||l.data>ate)continue;
+    const pdia=o.porDia[l.data]||(o.porDia[l.data]={f:0,c:0,o:0});
+    if(l.tipo==='viagem'){o.fretes+=l.valor;o.nF++;pdia.f+=l.valor;o.trab.add(l.data);if(l.km){o.km+=l.km}if(l.min)o.min+=l.min}
+    else if(l.tipo==='abast'){o.comb+=l.valor;o.nA++;o.litros+=l.litros||0;pdia.c+=l.valor}
+    else{o.outras+=l.valor;pdia.o+=l.valor;o.cats[l.cat||'Outros']=(o.cats[l.cat||'Outros']||0)+l.valor}
+  }
+  o.lucro=o.fretes-o.comb-o.outras;
+  o.dias=Object.fromEntries(Object.entries(o.porDia).map(([k,v])=>[k,v.f-v.c-v.o]));
+  o.metaOk=[...o.trab].filter(d=>(o.dias[d]||0)>=S.settings.metaDia).length;
+  return o;
+}
+function weekStart(s){const d=pd(s);const w=(d.getDay()+6)%7;return addD(s,-w)}
+function monthRange(s){const d=pd(s);const a=new Date(d.getFullYear(),d.getMonth(),1);const b=new Date(d.getFullYear(),d.getMonth()+1,0);return[iso(a),iso(b)]}
+function metaTexto(luc,meta){const df=luc-meta;
+  if(df<0)return`<span>Faltam <b>${R(-df)}</b> para a meta</span>`;
+  if(df===0)return`<span class="pos">Meta atingida</span>`;
+  return`<span class="pos">Meta atingida · ${R(df)} acima</span>`}
+
+/* ---------- cena da estrada ---------- */
+// fx = posição da frente da van. LINE = faixa de chegada. DONE = van estacionada depois da chegada.
+const SC={x0:100,x1:249,line:250,DONE:357,vw:96,gy:139,sc:.96};
+const AS={};
+const reduced=(()=>{try{return matchMedia('(prefers-reduced-motion: reduce)').matches}catch(e){return false}})();
+const fxFor=(lucro,meta)=>lucro>=meta?SC.DONE:SC.x0+(SC.x1-SC.x0)*Math.max(0,Math.min(1,lucro/meta));
+function tile(fn){return fn(0)+fn(360)}
+function sceneSVG(k,fx,metaLbl){
+  const trees=x=>`<g transform="translate(${x},0)">
+    <rect x="28" y="86" width="3" height="16" fill="#6B5A44"/><circle cx="29.5" cy="80" r="11" fill="#5E9675"/><circle cx="24" cy="85" r="7" fill="#6FA585"/><circle cx="35" cy="84" r="7.5" fill="#548A6A"/>
+    <rect x="88" y="70" width="1.8" height="32" fill="#8C918D"/><path d="M89 70 h7" stroke="#8C918D" stroke-width="1.8"/><rect x="94" y="69" width="5" height="2.4" rx="1" fill="#6E7470"/>
+    <rect x="150" y="90" width="2.6" height="12" fill="#6B5A44"/><circle cx="151.3" cy="85" r="8" fill="#6FA585"/><circle cx="147" cy="88" r="5" fill="#5E9675"/>
+    <rect x="210" y="70" width="1.8" height="32" fill="#8C918D"/><path d="M211 70 h7" stroke="#8C918D" stroke-width="1.8"/><rect x="216" y="69" width="5" height="2.4" rx="1" fill="#6E7470"/>
+    <path d="M250 102 q4 -9 8 0 q4 -11 9 0 q3 -7 7 0z" fill="#7DAE8D"/>
+    <rect x="302" y="84" width="3" height="18" fill="#6B5A44"/><path d="M303.5 64 l12 22 h-24z" fill="#4F8565"/><path d="M303.5 72 l10 18 h-20z" fill="#5E9675"/></g>`;
+  const hills=x=>`<g transform="translate(${x},0)"><path d="M0 88 C50 66 100 64 160 82 C215 98 262 64 360 88 L360 102 L0 102Z" fill="#D8E6DC"/>
+    <path d="M0 102 C40 82 82 84 122 92 C165 101 205 78 252 82 C292 86 322 95 360 102Z" fill="#C3D9CA"/>
+    <g fill="#CBD9D1"><rect x="196" y="70" width="9" height="20"/><rect x="207" y="62" width="11" height="28"/><rect x="220" y="74" width="8" height="16"/></g></g>`;
+  const dashes=[];for(let x=0;x<=396;x+=36)dashes.push(`<rect x="${x}" y="125.5" width="18" height="2.4" rx="1.2" fill="#F1C94A"/>`);
+  const L=SC.line,checker=[];for(let r=0;r<6;r++)for(let c=0;c<2;c++)checker.push(`<rect x="${L+c*5}" y="${110+r*5.67}" width="5" height="5.67" fill="${(r+c)%2?'#1C1F1E':'#F7F5EF'}"/>`);
+  const flag=[];for(let r=0;r<3;r++)for(let c=0;c<4;c++)if((r+c)%2===0)flag.push(`<rect x="${c*3.5}" y="${r*3}" width="3.5" height="3" fill="#1C1F1E"/>`);
+  const spokes=cx=>[0,72,144,216,288].map(a=>`<path d="M${cx} 43 L${cx} 37.8" stroke="#7E878D" stroke-width="1.5" stroke-linecap="round" transform="rotate(${a} ${cx} 43)"/>`).join('');
+  return `<svg class="scene" id="${k}-svg" viewBox="0 0 360 150" role="img" aria-label="Caminho até a meta">
+  <defs>
+   <linearGradient id="${k}-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FBF4E2"/><stop offset="1" stop-color="#E6F0EA"/></linearGradient>
+   <linearGradient id="${k}-body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".5" stop-color="#F4F6F7"/><stop offset=".85" stop-color="#DCE1E4"/><stop offset="1" stop-color="#C9D0D4"/></linearGradient>
+   <linearGradient id="${k}-glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#26333E"/><stop offset=".45" stop-color="#5E7A8D"/><stop offset="1" stop-color="#1E2A33"/></linearGradient>
+   <radialGradient id="${k}-rim" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#F3F5F6"/><stop offset="1" stop-color="#9AA3A9"/></radialGradient>
+   <linearGradient id="${k}-lamp" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#F6E3A1"/></linearGradient>
+   <linearGradient id="${k}-road" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#41463F"/><stop offset="1" stop-color="#2E322F"/></linearGradient>
+   <clipPath id="${k}-clip"><path d="M4 41 L3 10 Q3 5 8 5 L60 4.5 Q64 4.5 66 7 L77 19 Q79 21 83 21.8 L93 23.5 Q98 24.5 98.5 29 L99 37 Q99 41 95 41Z"/></clipPath>
+   <clipPath id="${k}-frame"><rect width="360" height="150" rx="14"/></clipPath>
+  </defs>
+  <g clip-path="url(#${k}-frame)">
+  <rect width="360" height="150" fill="url(#${k}-sky)"/>
+  <circle cx="320" cy="30" r="14" fill="#F5D489" opacity=".75"/><circle cx="320" cy="30" r="23" fill="#F5D489" opacity=".18"/>
+  <g id="${k}-far">${tile(hills)}</g>
+  <rect y="100" width="360" height="12" fill="#CFE2B9"/>
+  <g id="${k}-mid">${tile(trees)}</g>
+  <rect y="110" width="360" height="34" fill="url(#${k}-road)"/>
+  <rect y="110" width="360" height="1.6" fill="#B9B5A8"/>
+  <g id="${k}-dash">${dashes.join('')}</g>
+  <rect y="144" width="360" height="6" fill="#D8D2C2"/>
+  <rect id="${k}-trail" y="144" width="${Math.min(fx,SC.line)}" height="6" fill="#17603F"/>
+  ${checker.join('')}
+  <rect x="${L+11}" y="60" width="2" height="50" fill="#5B605C"/>
+  <g transform="translate(${L+13},60)"><rect width="14" height="9" fill="#F7F5EF"/>${flag.join('')}</g>
+  <g transform="translate(${L-14},40)"><rect width="38" height="15" rx="4" fill="#17603F"/><text x="19" y="10.8" text-anchor="middle" font-size="9" font-weight="700" fill="#fff" font-family="Atkinson Hyperlegible,sans-serif">META</text></g>
+  <g id="${k}-conf"></g>
+  <g id="${k}-van" transform="translate(${fx-SC.vw},${SC.gy-52*SC.sc}) scale(${SC.sc})">
+   <ellipse cx="51" cy="52.2" rx="47" ry="2.8" fill="#000" opacity=".28"/>
+   <path d="M4 41 L3 10 Q3 5 8 5 L60 4.5 Q64 4.5 66 7 L77 19 Q79 21 83 21.8 L93 23.5 Q98 24.5 98.5 29 L99 37 Q99 41 95 41Z" fill="url(#${k}-body)" stroke="#8D969C" stroke-width=".6"/>
+   <g clip-path="url(#${k}-clip)">
+    <rect x="0" y="35.6" width="100" height="6" fill="#2C3034"/>
+    <path d="M0 6.4 H62" stroke="#fff" stroke-width="1.6" opacity=".9"/>
+    <path d="M5 21.2 L80 21.6" stroke="#C2C8CD" stroke-width=".8"/>
+    <path d="M5 33.8 H99" stroke="#B9C0C5" stroke-width=".6"/>
+   </g>
+   <path d="M66.4 7.2 Q67 6.9 67.5 7.5 L77.6 19.3 Q76.9 20 76.2 19.6Z" fill="url(#${k}-glass)" opacity=".85"/>
+   <path d="M57 8.2 L62.6 8.2 Q63.8 8.2 64.6 9.1 L72.8 18.6 L57 18.6 Q56.4 18.6 56.4 18 L56.4 8.8 Q56.4 8.2 57 8.2Z" fill="url(#${k}-glass)"/>
+   <path d="M58.2 9.2 L61.4 9.2 L58.8 17.6 L57.4 17.6Z" fill="#fff" opacity=".2"/>
+   <g stroke="#ABB3B9" stroke-width=".7" fill="none"><path d="M55 5 V36"/><path d="M78 21 Q79.3 28 78.6 36"/><path d="M31 5 V36"/><path d="M7.5 5.5 V36"/></g>
+   <rect x="57.6" y="22.4" width="4.4" height="1.3" rx=".65" fill="#5F676D"/>
+   <rect x="33.2" y="22.4" width="4.4" height="1.3" rx=".65" fill="#5F676D"/>
+   <path d="M71.2 17.4 Q71.4 16 73 15.8 L74.6 15.7 Q75.4 15.7 75.4 16.6 L75.3 18.2 Q75.2 19 74.4 19 L72 19.1 Q71.2 19.1 71.2 18.3Z" fill="#2A2F34"/>
+   <path d="M91.6 24.2 Q97 25 98.2 28.8 L92.6 28.6Z" fill="url(#${k}-lamp)" stroke="#7F888E" stroke-width=".4"/>
+   <rect x="89.6" y="25" width="2" height="1.6" rx=".5" fill="#F0A33A"/>
+   <rect x="95.6" y="30" width="3.2" height="4" rx=".8" fill="#34383C"/>
+   <rect x="3.1" y="11" width="2.6" height="11" rx="1" fill="#C3302A"/><rect x="3.7" y="12" width=".9" height="4" rx=".4" fill="#F2807A"/>
+   <path d="M89.6 35 L98.7 35 Q99.8 35 99.5 37.6 L99.1 40 Q98.7 41.3 96 41.3 L89.6 41.3Z" fill="#222528"/>
+   <rect x="2.2" y="34.6" width="7.6" height="6.8" rx="1.6" fill="#222528"/>
+   <path d="M9.6 41.4 A10.4 10.4 0 0 1 30.4 41.4Z" fill="#121416"/><path d="M71.6 41.4 A10.4 10.4 0 0 1 92.4 41.4Z" fill="#121416"/>
+   ${[20,82].map((cx,i)=>`<circle cx="${cx}" cy="43" r="9" fill="#1B1D1F"/><circle cx="${cx}" cy="43" r="8.1" fill="none" stroke="#2F3336" stroke-width="1"/>
+     <circle cx="${cx}" cy="43" r="5.7" fill="url(#${k}-rim)"/>
+     <g id="${k}-w${i}">${spokes(cx)}</g>
+     <circle id="${k}-b${i}" cx="${cx}" cy="43" r="4.6" fill="none" stroke="#8A9298" stroke-width="2" opacity="0"/>
+     <circle cx="${cx}" cy="43" r="1.5" fill="#4E555B"/>`).join('')}
+  </g>
+  </g></svg>
+  <div class="roadLbl"><span>R$ 0</span><span>${metaLbl}</span></div>`}
+
+const CONF_COL=['#17603F','#F1C94A','#E8743B','#2F6FB5','#FFFFFF','#C3302A'];
+function confetti(k,st){
+  const g=document.getElementById(k+'-conf');if(!g||reduced)return;
+  const NS='http://www.w3.org/2000/svg';const ps=[];
+  for(let i=0;i<90;i++){const e=document.createElementNS(NS,'rect');const w=2+Math.random()*2.2;
+    e.setAttribute('width',w);e.setAttribute('height',w*.55);e.setAttribute('x',-w/2);e.setAttribute('y',-w*.27);e.setAttribute('fill',CONF_COL[i%CONF_COL.length]);g.appendChild(e);
+    const a=-Math.PI/2-.45+(Math.random()-.5)*2.4;const sp=.08+Math.random()*.14;
+    ps.push({e,x:SC.line+5+(Math.random()-.5)*8,y:62+Math.random()*10,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,rot:Math.random()*360,vr:(Math.random()-.5)*1.2,
+      land:113+Math.random()*30,on:false,sy:1,fl:Math.random()*6})}
+  let last=null,born=null;
+  const step=now=>{if(!document.body.contains(g))return;if(last===null){last=now;born=now}
+    const dt=Math.min(40,now-last);last=now;const age=now-born;
+    for(const p of ps){
+      if(!p.on){p.vy+=.00032*dt;p.vx*=Math.pow(.995,dt);p.x+=p.vx*dt+Math.sin((age+p.fl*300)/180)*.04*dt;p.y+=p.vy*dt;p.rot+=p.vr*dt;
+        if(p.y>=p.land&&p.vy>0){p.y=p.land;p.on=true;p.sy=.45}}
+      const op=age>5000?Math.max(0,1-(age-5000)/1200):1;
+      p.e.setAttribute('transform',`translate(${p.x.toFixed(2)},${p.y.toFixed(2)}) rotate(${p.rot.toFixed(1)}) scale(1,${p.sy})`);p.e.setAttribute('opacity',op)}
+    if(age<6300)requestAnimationFrame(step);else g.innerHTML=''};
+  requestAnimationFrame(step)}
+
+function sceneStart(k,fxTo,lucTo,numEl,fmt){
+  const st=AS[k]||(AS[k]={fx:SC.x0,l:0,road:0,wheel:0,raf:0});
+  cancelAnimationFrame(st.raf);
+  const $=id=>document.getElementById(k+'-'+id);
+  if(!$('svg'))return;
+  const fx0=st.fx,l0=st.l,d=fxTo-fx0;
+  // só move a van se a posição mudar; acima da meta apenas o valor sobe
+  const T=reduced?0:(Math.abs(d)>.3?1100+7*Math.abs(d):(lucTo!==l0?700:0));
+  const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+  const draw=(fx,degPerFrame)=>{
+    $('van').setAttribute('transform',`translate(${(fx-SC.vw).toFixed(2)},${SC.gy-52*SC.sc}) scale(${SC.sc})`);
+    $('trail').setAttribute('width',Math.min(fx,SC.line).toFixed(2));
+    const r=st.road,m=(v,n)=>((v%n)+n)%n;
+    $('dash').setAttribute('transform',`translate(${(-m(r,36)).toFixed(2)},0)`);
+    $('mid').setAttribute('transform',`translate(${(-m(r*.55,360)).toFixed(2)},0)`);
+    $('far').setAttribute('transform',`translate(${(-m(r*.18,360)).toFixed(2)},0)`);
+    // raios somem e viram borrão quando a roda gira rápido (evita o efeito estroboscópico)
+    const blur=Math.max(0,Math.min(1,(degPerFrame-6)/14));
+    for(let i=0;i<2;i++){const cx=i?82:20;const w=$('w'+i);w.setAttribute('transform',`rotate(${m(st.wheel,72).toFixed(1)} ${cx} 43)`);
+      w.setAttribute('opacity',(1-blur).toFixed(2));$('b'+i).setAttribute('opacity',(blur*.75).toFixed(2))}};
+  draw(fx0,0);   // posiciona estrada/rodas já no primeiro quadro, sem salto
+  if(T===0){st.fx=fxTo;st.l=lucTo;if(numEl)numEl.textContent=fmt(lucTo);draw(fxTo,0);return}
+  let t0=null,lastT=null,lastX=fx0,crossed=false;
+  const step=now=>{
+    if(!$('svg')){st.fx=fxTo;st.l=lucTo;return}   // saiu da tela: termina sem desenhar
+    if(t0===null){t0=now;lastT=now}
+    const dt=Math.max(1,Math.min(40,now-lastT));lastT=now;
+    const t=Math.min(1,(now-t0)/T),e=ease(t);
+    const fx=fx0+d*e;st.fx=fx;st.l=Math.round(l0+(lucTo-l0)*e);
+    if(numEl)numEl.textContent=fmt(st.l);
+    const v=(fx-lastX)/dt;
+    if(!crossed&&lastX<SC.line+10&&fx>=SC.line+10&&v>0){crossed=true;confetti(k,st)}
+    lastX=fx;
+    const ground=v*3.2;                       // a estrada corre mais que a van; ao voltar, corre ao contrário
+    st.road+=ground*dt;
+    const ang=(ground+v)/(8.6*SC.sc)*57.3;     // graus por ms
+    st.wheel+=ang*dt;
+    draw(fx,Math.abs(ang)*16.7);
+    if(t<1)st.raf=requestAnimationFrame(step);else draw(fx,0)};
+  st.raf=requestAnimationFrame(step)}
+
+/* ---------- estado de tela ---------- */
+let tab='hoje', rep={modo:'semana',ref:TODAY}, chartSel=null;
+
+function nav(){
+  const items=[['hoje','Hoje',I.home],['hist','Histórico',I.list],['rel','Relatórios',I.chart],['aj','Ajustes',I.gear]];
+  document.getElementById('nav').innerHTML=items.map(([k,t,i])=>`<button type="button" data-tab="${k}" ${tab===k?'aria-current="page"':''}><span class="pill">${i}</span>${t}</button>`).join('');
+}
+function demoBar(){return S.demo?`<div class="demo"><span>Valores de exemplo para você testar.</span><button type="button" data-act="limpar">Começar do zero</button></div>`:''}
+
+function render(){nav();const m=document.getElementById('main');
+  m.innerHTML=tab==='hoje'?vHoje():tab==='hist'?vHist():tab==='rel'?vRel():vAj();
+  window.scrollTo(0,0);startScenes()}
+function startScenes(){
+  if(tab==='hoje'){const o=resumo(TODAY,TODAY);sceneStart('dia',fxFor(o.lucro,S.settings.metaDia),o.lucro,document.getElementById('lucroHoje'),R)}
+  if(tab==='rel'&&rep.modo==='mes'&&S.settings.metaMes){const[a,b]=range();const o=resumo(a,b);
+    if(AS.mes&&AS.mes.key!==a){AS.mes.fx=SC.x0;AS.mes.l=0}
+    sceneStart('mes',fxFor(o.lucro,S.settings.metaMes),o.lucro,null,R);AS.mes.key=a}}
+
+/* ---------- HOJE ---------- */
+function contaDia(o,mostrarMeta){
+  return `<div class="row"><span>Fretes <span class="sub">(${o.nF})</span></span><span class="v">${R(o.fretes)}</span></div>
+  <div class="row"><span>Combustível <span class="sub">${o.nA?'('+o.nA+' abastec.)':''}</span></span><span class="v">− ${R(o.comb)}</span></div>
+  <div class="row"><span>Outras despesas</span><span class="v">− ${R(o.outras)}</span></div>
+  <div class="row total"><b>Lucro</b><span class="v ${o.lucro<0?'neg':''}">${R(o.lucro)}</span></div>`}
+function entryRow(l){
+  const t={viagem:['Frete','t-viagem'],abast:['Combustível','t-abast'],despesa:['Despesa','t-despesa']}[l.tipo];
+  let det=l.tipo==='viagem'?(l.km?l.km+' km':''):l.tipo==='abast'&&l.litros?brNum(l.litros,2)+' L · '+R(l.preco||Math.round(l.valor/l.litros))+'/L':'';
+  const sinal=l.tipo==='viagem'?'':'− ';
+  return `<div class="entry"><button type="button" class="info" data-act="edit" data-id="${l.id}" style="background:none;border:0;text-align:left;cursor:pointer;padding:0;min-height:48px">
+    <span class="tag ${t[1]}">${esc(t[0])}</span><span class="sub">${det}</span><b>${esc(l.desc||(l.tipo==='abast'?'Abastecimento':l.tipo==='viagem'?'Frete':l.cat))}</b></button>
+    <span class="v" style="font-weight:700;white-space:nowrap">${sinal}${R(l.valor)}</span>
+    <button type="button" class="icon-btn" data-act="del" data-id="${l.id}" aria-label="Apagar lançamento">${I.trash}</button></div>`}
+function vHoje(){
+  const o=resumo(TODAY,TODAY);const meta=S.settings.metaDia;const p=Math.max(0,Math.min(1,o.lucro/meta));
+  const lst=S.lanc.filter(l=>l.data===TODAY).slice().reverse();
+  const [ma,mb]=monthRange(TODAY);const om=resumo(ma,TODAY);
+  return `${demoBar()}
+  <div class="top"><div><h1>Meus Fretes</h1><div class="date">${longDate(TODAY)}</div></div></div>
+  <div class="card">
+    <div class="label">LUCRO DE HOJE</div>
+    <div class="big ${o.lucro<0?'neg':''}" id="lucroHoje">${R((AS.dia||{l:0}).l)}</div>
+    <div class="metaTxt">${metaTexto(o.lucro,meta)}</div>
+    ${sceneSVG('dia',(AS.dia||{fx:SC.x0}).fx,'Meta '+R(meta))}
+  </div>
+  <div class="actions">
+    <button type="button" class="btn main" data-act="novo" data-tipo="viagem">${I.plus} Anotar frete</button>
+    <button type="button" class="btn fuel" data-act="novo" data-tipo="abast">${I.fuel} Abasteci</button>
+    <button type="button" class="btn soft" data-act="novo" data-tipo="despesa">${I.bill} Outra despesa</button>
+    <button type="button" class="btn line" data-act="calc" style="grid-column:1/-1">${I.calc} Vale a conta? Calcular um frete</button>
+  </div>
+  <div class="card"><h2>Conta de hoje</h2>${contaDia(o)}</div>
+  <div class="card"><h2>Lançado hoje</h2>${lst.length?lst.map(entryRow).join(''):'<div class="empty">Nada anotado ainda hoje.</div>'}</div>
+  <div class="card"><div class="label">ESTE MÊS ATÉ AGORA</div>
+    <div class="kpis" style="margin-top:8px">
+      <div class="kpi"><div class="n ${om.lucro<0?'neg':''}">${R0(om.lucro)}</div><div class="l">lucro no mês</div></div>
+      <div class="kpi"><div class="n">${R0(om.comb)}</div><div class="l">em combustível</div></div>
+    </div>
+    <button type="button" class="btn line" style="width:100%;margin-top:12px;min-height:54px" data-act="vermes">Ver relatório do mês</button>
+  </div>`}
+
+/* ---------- HISTÓRICO ---------- */
+function vHist(){
+  const dias=[...new Set(S.lanc.map(l=>l.data))].sort().reverse();
+  if(!dias.length)return demoBar()+'<h1 style="margin-bottom:12px">Histórico</h1><div class="card empty">Ainda não há lançamentos.</div>';
+  let h=demoBar()+'<h1>Histórico</h1><div class="date" style="margin-bottom:6px">Toque num dia para ver ou corrigir.</div>';let mes='';
+  const meta=S.settings.metaDia;
+  for(const d of dias){const mk=d.slice(0,7);
+    if(mk!==mes){mes=mk;const[a,b]=monthRange(d);const om=resumo(a,b);const dt=pd(d);
+      h+=`<div class="mhead"><span>${MES[dt.getMonth()][0].toUpperCase()+MES[dt.getMonth()].slice(1)} ${dt.getFullYear()}</span><span>${R(om.lucro)}</span></div>`}
+    const o=resumo(d,d);const ok=o.nF&&o.lucro>=meta;
+    h+=`<button type="button" class="day" data-act="dia" data-d="${d}">
+      <span><b>${shortDate(d)}${d===TODAY?' · hoje':''}</b><br><span class="sub"><span class="dot" style="background:${ok?'var(--green)':'#C9C2B2'}"></span>${ok?'Meta atingida':'Abaixo da meta'} · ${o.nF} frete${o.nF===1?'':'s'}${o.nA?' · abasteceu':''}</span></span>
+      <span class="v ${o.lucro<0?'neg':''}" style="font-weight:700;font-size:1.1rem">${R(o.lucro)}</span></button>`}
+  return h}
+
+/* ---------- RELATÓRIOS ---------- */
+function range(){const m=rep.modo,ref=rep.ref;
+  if(m==='dia')return[ref,ref];
+  if(m==='semana'){const a=weekStart(ref);return[a,addD(a,6)]}
+  return monthRange(ref)}
+function shift(n){const m=rep.modo;
+  if(m==='dia')rep.ref=addD(rep.ref,n);
+  else if(m==='semana')rep.ref=addD(rep.ref,7*n);
+  else{const d=pd(rep.ref);rep.ref=iso(new Date(d.getFullYear(),d.getMonth()+n,1))}
+  chartSel=null}
+function rotulo(a,b){const m=rep.modo;
+  if(m==='dia')return longDate(a);
+  if(m==='semana')return`Semana de ${dm(a)} a ${dm(b)}`;
+  const d=pd(a);return MES[d.getMonth()][0].toUpperCase()+MES[d.getMonth()].slice(1)+' de '+d.getFullYear()}
+function barChart(a,b,o){
+  const days=[];for(let d=a;d<=b;d=addD(d,1))days.push(d);
+  const W=340,H=190,top=22,bot=28,n=days.length,gw=W/n,bw=Math.min(34,gw*.68);
+  const vals=days.map(d=>o.dias[d]||0);const meta=S.settings.metaDia;
+  const mx=Math.max(meta*1.15,...vals,1),mn=Math.min(0,...vals);const sc=(H-top-bot)/(mx-mn);const y0=top+mx*sc;
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Lucro por dia">`;
+  const ym=y0-meta*sc;
+  s+=`<line x1="0" x2="${W}" y1="${ym}" y2="${ym}" stroke="#17603F" stroke-dasharray="5 5" stroke-width="1.5"/><text x="${W-2}" y="${ym-5}" text-anchor="end" font-size="11" fill="#17603F" font-weight="700" stroke="#fff" stroke-width="3.5" paint-order="stroke">meta ${R0(meta)}</text>`;
+  s+=`<line x1="0" x2="${W}" y1="${y0}" y2="${y0}" stroke="#B8B1A2"/>`;
+  days.forEach((d,i)=>{const v=vals[i];const x=i*gw+(gw-bw)/2;const h=Math.abs(v)*sc;const y=v>=0?y0-h:y0;
+    const fut=d>TODAY;const sel=chartSel===d;
+    const fill=v<0?'#A9221B':v>=meta?'#17603F':'#7FB394';
+    s+=`<rect data-act="bar" data-d="${d}" x="${i*gw}" y="${top}" width="${gw}" height="${H-top}" fill="transparent" style="cursor:pointer"/>`;
+    if(!fut&&o.porDia[d])s+=`<rect pointer-events="none" x="${x}" y="${y}" width="${bw}" height="${Math.max(h,2)}" rx="3" fill="${fill}" ${sel?'stroke="#191D1B" stroke-width="2.5"':''}/>`;
+    if(n<=7&&o.porDia[d])s+=`<text pointer-events="none" x="${x+bw/2}" y="${(v>=0?y:y+h)-5}" text-anchor="middle" font-size="12" font-weight="700" fill="#191D1B">${Math.round(v/100)}</text>`;
+    const dd=pd(d);const lbl=n<=7?DOW[dd.getDay()]:(dd.getDate()===1||dd.getDate()%5===0?dd.getDate():'');
+    s+=`<text pointer-events="none" x="${i*gw+gw/2}" y="${H-8}" text-anchor="middle" font-size="${n<=7?13:11}" fill="${d===TODAY?'#17603F':'#565D59'}" font-weight="${d===TODAY?700:400}">${lbl}</text>`});
+  return s+'</svg>'}
+function fuelMonths(){
+  const d=pd(rep.ref);const arr=[];for(let i=5;i>=0;i--){const m=new Date(d.getFullYear(),d.getMonth()-i,1);const[a,b]=monthRange(iso(m));const o=resumo(a,b);arr.push({m,v:o.comb,l:o.litros})}
+  const W=340,H=150,top=22,bot=26,gw=W/6,bw=32;const mx=Math.max(...arr.map(x=>x.v),1);const sc=(H-top-bot)/mx;
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Combustível por mês">`;
+  arr.forEach((x,i)=>{const h=x.v*sc;const X=i*gw+(gw-bw)/2;const Y=H-bot-h;const cur=i===5;
+    s+=`<rect x="${X}" y="${Y}" width="${bw}" height="${Math.max(h,1)}" rx="4" fill="${cur?'#A8500B':'#E3B48A'}"/>`;
+    if(x.v)s+=`<text x="${X+bw/2}" y="${Y-5}" text-anchor="middle" font-size="11" font-weight="700" fill="#191D1B">${Math.round(x.v/100)}</text>`;
+    s+=`<text x="${X+bw/2}" y="${H-8}" text-anchor="middle" font-size="12" fill="#565D59" font-weight="${cur?700:400}">${MESC[x.m.getMonth()]}</text>`});
+  return s+'</svg>'}
+function vRel(){
+  const[a,b]=range();const o=resumo(a,b);const m=rep.modo;
+  const parcial=a<=TODAY&&b>=TODAY&&m!=='dia';
+  // período anterior
+  let pa,pb;if(m==='dia'){pa=pb=addD(a,-1)}else if(m==='semana'){pa=addD(a,-7);pb=addD(b,-7)}else{const d=pd(a);[pa,pb]=monthRange(iso(new Date(d.getFullYear(),d.getMonth()-1,1)))}
+  const op=resumo(pa,pb);const df=o.lucro-op.lucro;
+  const nomeAnt={dia:'no dia anterior',semana:'na semana anterior',mes:'no mês anterior'}[m];
+  const cmp=op.nF?`${R(Math.abs(df))} ${df>=0?'a mais':'a menos'} que ${nomeAnt}${parcial?' (este período ainda está em andamento)':''}`:'';
+  const nt=o.trab.size;
+  let h=`${demoBar()}<h1 style="margin-bottom:12px">Relatórios</h1>
+  <div class="seg" role="group" aria-label="Período">${[['dia','Dia'],['semana','Semana'],['mes','Mês']].map(([k,t])=>`<button type="button" data-act="modo" data-m="${k}" aria-pressed="${m===k}">${t}</button>`).join('')}</div>
+  <div class="period"><button type="button" class="icon-btn" data-act="prev" aria-label="Período anterior">${I.left}</button>
+   <div class="p">${rotulo(a,b)}${parcial?'<span class="badge">Parcial</span>':''}</div>
+   <button type="button" class="icon-btn" data-act="next" aria-label="Próximo período" ${b>=TODAY?'disabled style="opacity:.35"':''}>${I.right}</button></div>
+  <div class="card"><div class="label">LUCRO ${m==='dia'?'DO DIA':m==='semana'?'DA SEMANA':'DO MÊS'}</div>
+   <div class="big ${o.lucro<0?'neg':''}">${R(o.lucro)}</div>
+   ${cmp?`<div class="cmp">${cmp}</div>`:''}
+   ${m==='dia'?`<div class="metaTxt">${o.nF?metaTexto(o.lucro,S.settings.metaDia):'<span class="sub">Sem fretes anotados neste dia.</span>'}</div>`:''}
+   ${m==='mes'?metaMes(o,a,b):''}
+  </div>`;
+  if(m!=='dia'){
+    const sel=chartSel&&chartSel>=a&&chartSel<=b?chartSel:null;
+    h+=`<div class="card chart"><h2>Lucro por dia</h2>${barChart(a,b,o)}
+     <div class="tip">${sel?`${shortDate(sel)}: ${o.porDia[sel]?R(o.dias[sel]):'sem lançamentos'}`:'<span class="sub" style="font-weight:400">Toque numa barra para ver o valor</span>'}</div>
+     ${sel&&o.porDia[sel]?`<button type="button" class="btn line" style="width:100%;min-height:52px" data-act="dia" data-d="${sel}">Abrir este dia</button>`:''}</div>
+    <div class="card"><h2>Metas</h2><div class="kpis">
+      <div class="kpi"><div class="n">${o.metaOk} de ${nt}</div><div class="l">dias trabalhados com meta de ${R0(S.settings.metaDia)} atingida</div></div>
+      <div class="kpi"><div class="n">${nt?R0(o.lucro/nt):'—'}</div><div class="l">lucro médio por dia trabalhado</div></div></div></div>`}
+  h+=`<div class="card"><h2>Conta ${m==='dia'?'do dia':m==='semana'?'da semana':'do mês'}</h2>${contaDia(o)}
+   ${Object.keys(o.cats).length?`<div class="sub" style="margin-top:8px">Outras despesas: ${Object.entries(o.cats).map(([k,v])=>esc(k)+' '+R(v)).join(' · ')}</div>`:''}</div>`;
+  // combustível
+  const pct=o.fretes?Math.round(o.comb/o.fretes*100):0;
+  h+=`<div class="card fuelCard"><h2>Combustível ${m==='dia'?'no dia':m==='semana'?'na semana':'no mês'}</h2><div class="kpis">
+   <div class="kpi"><div class="n">${R(o.comb)}</div><div class="l">gasto em ${o.nA} abastecimento${o.nA===1?'':'s'}</div></div>
+   <div class="kpi"><div class="n">${o.litros?brNum(o.litros)+' L':'—'}</div><div class="l">${o.litros?'preço médio '+R(Math.round(o.comb/o.litros))+'/L':'litros não informados'}</div></div>
+   <div class="kpi"><div class="n">${pct}%</div><div class="l">do valor dos fretes foi para o tanque</div></div>
+   <div class="kpi"><div class="n">${o.km?o.km.toLocaleString('pt-BR')+' km':'—'}</div><div class="l">rodados nos fretes anotados</div></div></div>
+   ${m==='mes'?`<h2 style="margin-top:16px">Combustível nos últimos 6 meses</h2><div class="chart">${fuelMonths()}</div>`:''}</div>`;
+  if(o.km&&o.nF){h+=`<div class="card"><h2>Rendimento</h2><div class="kpis">
+   <div class="kpi"><div class="n">${R(Math.round(o.lucro/o.km))}</div><div class="l">de lucro por km rodado</div></div>
+   <div class="kpi"><div class="n">${o.min?R(Math.round(o.lucro/(o.min/60))):'—'}</div><div class="l">de lucro por hora de frete</div></div></div>
+   <div class="sub" style="margin-top:8px">Calculado com ${o.nF} fretes que têm km anotado.</div></div>`}
+  if(m==='dia'){const lst=S.lanc.filter(l=>l.data===a);h+=`<div class="card"><h2>Lançamentos</h2>${lst.length?lst.map(entryRow).join(''):'<div class="empty">Nada neste dia.</div>'}
+   <button type="button" class="btn main" style="width:100%;margin-top:12px" data-act="novo" data-tipo="viagem" data-d="${a}">${I.plus} Anotar neste dia</button></div>`}
+  h+=`<button type="button" class="btn line" style="width:100%" data-act="share">${I.copy} Copiar resumo para o WhatsApp</button>`;
+  return h}
+function metaMes(o,a,b){const mm=S.settings.metaMes;if(!mm)return'';const p=Math.max(0,Math.min(1,o.lucro/mm));const df=o.lucro-mm;
+  return `<div class="metaTxt">${df<0?`Faltam <b>${R(-df)}</b> para a meta do mês`:`<span class="pos">Meta do mês atingida${df>0?' · '+R(df)+' acima':''}</span>`}</div>
+  ${sceneSVG('mes',(AS.mes&&AS.mes.key===a?AS.mes.fx:SC.x0),'Meta do mês '+R0(mm))}`}
+function shareText(){const[a,b]=range();const o=resumo(a,b);const parcial=a<=TODAY&&b>=TODAY&&rep.modo!=='dia';
+  return `🚐 Meus Fretes — ${rotulo(a,b)}${parcial?' (parcial)':''}
+Fretes: ${R(o.fretes)} (${o.nF})
+Combustível: − ${R(o.comb)}${o.litros?' ('+brNum(o.litros)+' L)':''}
+Outras despesas: − ${R(o.outras)}
+*Lucro: ${R(o.lucro)}*${rep.modo!=='dia'?`
+Meta diária atingida em ${o.metaOk} de ${o.trab.size} dias trabalhados`:''}`}
+
+/* ---------- AJUSTES ---------- */
+function vAj(){const s=S.settings;
+  return `<h1 style="margin-bottom:12px">Ajustes</h1>
+  <form class="card" id="ajForm">
+   <div class="field"><label for="aMeta">Meta de lucro por dia</label><div class="money"><span>R$</span><input id="aMeta" inputmode="decimal" value="${inp(s.metaDia/100,2)}"></div></div>
+   <div class="field"><label for="aMes">Meta de lucro do mês</label><div class="money"><span>R$</span><input id="aMes" inputmode="decimal" value="${inp(s.metaMes/100,2)}"></div></div>
+   <div class="two"><div class="field"><label for="aKml">Consumo (km por litro)</label><input id="aKml" inputmode="decimal" value="${inp(s.kml,1)}"></div>
+   <div class="field"><label for="aPreco">Preço do litro</label><input id="aPreco" inputmode="decimal" value="${inp(s.preco/100,2)}"></div></div>
+   <div class="sub" style="margin-bottom:12px">O preço do litro se atualiza sozinho quando você anota um abastecimento com os litros. Mudar estes valores não altera dias que já passaram.</div>
+   <div class="err" id="ajErr"></div>
+   <button class="btn main" style="width:100%" type="submit">Salvar ajustes</button>
+  </form>
+  <div class="card"><h2>Tamanho da letra</h2><div class="fontBtns">
+   ${[[18,'A'],[20,'A+'],[23,'A++']].map(([v,t])=>`<button type="button" class="btn ${s.fs===v?'main':'line'}" style="grid-column:auto;font-size:${v}px" data-act="fs" data-v="${v}" aria-pressed="${s.fs===v}">${t}</button>`).join('')}</div></div>
+  <div class="card"><h2>Dados</h2><div class="sub" style="margin-bottom:10px">No app de verdade aqui ficam a cópia de segurança e a exportação para planilha.</div>
+   <button type="button" class="btn line" style="width:100%" data-act="reset">Recarregar valores de exemplo</button>
+   <button type="button" class="btn line" style="width:100%;margin-top:10px" data-act="limpar">Apagar tudo e começar do zero</button></div>`}
+
+/* ---------- folha de lançamento ---------- */
+let edit=null, cat='Pedágio', saving=false;
+const CATS=['Pedágio','Manutenção','Estacionamento','Lavagem','Multa','Outros'];
+function openSheet(html){document.getElementById('sheet').innerHTML=html;document.getElementById('sheetBg').classList.add('open');
+  setTimeout(()=>{const f=document.querySelector('#sheet input');f&&f.focus()},60)}
+function closeSheet(){document.getElementById('sheetBg').classList.remove('open');edit=null}
+function sheetForm(tipo,l,data){
+  edit={tipo,id:l?l.id:null};cat=l&&l.cat||'Pedágio';
+  const tit={viagem:'Anotar frete',abast:'Abasteci',despesa:'Outra despesa'}[tipo];
+  const v=l?inp(l.valor/100,2):'';const d=l?l.data:(data||TODAY);
+  let h=`<h3>${l?'Corrigir':tit}<button type="button" class="icon-btn" data-act="close" aria-label="Fechar">${I.x}</button></h3>
+  <form id="fForm" novalidate>
+  <div class="field"><label for="fVal">${tipo==='viagem'?'Quanto ficou para você':tipo==='abast'?'Quanto pagou no posto':'Valor'}</label><div class="money"><span>R$</span><input id="fVal" inputmode="decimal" placeholder="0,00" value="${v}" autocomplete="off"></div></div>`;
+  if(tipo==='abast'){abMode='preco';
+    const pr=l?(l.preco||(l.litros?Math.round(l.valor/l.litros):S.settings.preco)):S.settings.preco;
+    h+=`<div class="field"><label>Você sabe…</label><div class="seg" role="group" aria-label="O que você sabe" style="margin:0">
+      <button type="button" data-act="abMode" data-m="preco" aria-pressed="true">o preço do litro</button>
+      <button type="button" data-act="abMode" data-m="litros" aria-pressed="false">quantos litros</button></div></div>
+    <div class="field" id="fAuxBox"></div>
+    <div class="fuelRes" id="fPL" aria-live="polite"></div>`;
+    abInit={preco:inp(pr/100,2),litros:l&&l.litros?inp(l.litros,2):''}}
+  if(tipo==='despesa')h+=`<div class="field"><label>Tipo</label><div class="chips" id="fCats">${CATS.map(c=>`<button type="button" data-act="cat" data-c="${c}" aria-pressed="${c===cat}">${c}</button>`).join('')}</div></div>`;
+  h+=`<div class="field"><label for="fDesc">${tipo==='viagem'?'Cliente ou descrição':'Observação'} <span class="sub">(opcional)</span></label><input id="fDesc" value="${esc(l&&l.desc||'')}" autocomplete="off"></div>`;
+  if(tipo==='viagem')h+=`<details ${l&&(l.km||l.min)?'open':''}><summary>Mais detalhes: km e tempo</summary>
+   <div class="two"><div class="field"><label for="fKm">Km rodados</label><input id="fKm" inputmode="numeric" value="${l&&l.km||''}"></div>
+   <div class="field"><label for="fMin">Tempo (horas)</label><input id="fMin" inputmode="decimal" placeholder="Ex.: 1,5" value="${l&&l.min?inp(l.min/60,1):''}"></div></div></details>`;
+  h+=`<div class="field"><label for="fData">Data</label><input id="fData" type="date" value="${d}" max="${TODAY}"></div>
+  <div class="err" id="fErr"></div>
+  <button class="btn main" style="width:100%" type="submit">Salvar</button>
+  ${tipo==='viagem'&&!l?'<button type="button" class="btn line" style="width:100%;margin-top:10px" data-act="saveMore">Salvar e anotar outro</button>':''}
+  </form>`;
+  openSheet(h);
+  if(tipo==='abast'){abAux();document.getElementById('fVal').oninput=abUpd}
+}
+let abMode='preco',abInit={};
+function abAux(){const b=document.getElementById('fAuxBox');
+  b.innerHTML=abMode==='preco'
+   ?`<label for="fAux">Preço do litro</label><div class="money"><span>R$</span><input id="fAux" inputmode="decimal" placeholder="3,70" value="${abInit.preco||''}"></div>`
+   :`<label for="fAux">Litros que entraram no tanque</label><div class="money"><span>L</span><input id="fAux" inputmode="decimal" placeholder="54,05" value="${abInit.litros||''}"></div>`;
+  document.getElementById('fAux').oninput=abUpd;abUpd()}
+function abCalc(){const v=parseMoney(val('fVal'));const x=abMode==='preco'?parseMoney(val('fAux')):parseNum(val('fAux'));
+  if(!(v>0)||!(x>0))return null;
+  return abMode==='preco'?{litros:Math.round(v/x*100)/100,preco:x}:{litros:Math.round(x*100)/100,preco:Math.round(v/x)}}
+function abUpd(){const c=abCalc();const el=document.getElementById('fPL');if(!el)return;
+  el.innerHTML=c?(abMode==='preco'?`<span class="sub">Entraram no tanque</span><b>${brNum(c.litros,2)} litros</b>`:`<span class="sub">Você pagou por litro</span><b>${R(c.preco)}</b>`)
+   :`<span class="sub">${abMode==='preco'?'Digite o valor pago e o preço do litro: o app calcula os litros.':'Digite o valor pago e os litros: o app calcula o preço do litro.'}</span>`}
+const val=id=>{const e=document.getElementById(id);return e?e.value:''};
+function submitEntry(more){
+  if(saving)return;const err=document.getElementById('fErr');
+  const v=parseMoney(val('fVal'));if(!(v>0)){err.textContent='Digite o valor. Ex.: 120 ou 85,50';return}
+  const data=val('fData')||TODAY;if(data>TODAY){err.textContent='A data não pode ser no futuro.';return}
+  const o={id:edit.id||uid(),tipo:edit.tipo,data,valor:v,desc:val('fDesc').trim()};
+  if(edit.tipo==='viagem'){const km=parseNum(val('fKm'));const hr=parseNum(val('fMin'));if(km>0)o.km=Math.round(km);if(hr>0)o.min=Math.round(hr*60)}
+  if(edit.tipo==='abast'){const c=abCalc();if(!c){err.textContent=abMode==='preco'?'Digite o preço do litro.':'Digite quantos litros.';return}
+    o.litros=c.litros;o.preco=c.preco;if(data===TODAY||!edit.id)S.settings.preco=c.preco}
+  if(edit.tipo==='despesa')o.cat=cat;
+  saving=true;setTimeout(()=>saving=false,500);
+  if(edit.id){const i=S.lanc.findIndex(x=>x.id===edit.id);if(i>=0)S.lanc[i]=Object.assign({},S.lanc[i],o)}else S.lanc.push(o);
+  save();const wasEdit=!!edit.id;
+  if(more){sheetForm('viagem',null,data);toast('Frete salvo. Pode anotar o próximo.')}else{closeSheet();toast(wasEdit?'Corrigido.':'Salvo.')}
+  render()}
+
+/* ---------- calculadora ---------- */
+function calcSheet(){const s=S.settings;
+  openSheet(`<h3>Calcular frete<button type="button" class="icon-btn" data-act="close" aria-label="Fechar">${I.x}</button></h3>
+  <div class="field"><label for="cVal">Valor oferecido</label><div class="money"><span>R$</span><input id="cVal" inputmode="decimal" placeholder="0,00"></div></div>
+  <div class="two"><div class="field"><label for="cKm">Km total (ida e volta)</label><input id="cKm" inputmode="numeric"></div>
+  <div class="field"><label for="cH">Tempo (horas)</label><input id="cH" inputmode="decimal" placeholder="opcional"></div></div>
+  <div class="field"><label for="cOut">Pedágio e outros custos</label><div class="money"><span>R$</span><input id="cOut" inputmode="decimal" placeholder="0,00"></div></div>
+  <div class="two"><div class="field"><label for="cKml">Km por litro</label><input id="cKml" inputmode="decimal" value="${inp(s.kml,1)}"></div>
+  <div class="field"><label for="cPr">Preço do litro</label><input id="cPr" inputmode="decimal" value="${inp(s.preco/100,2)}"></div></div>
+  <div class="calcOut" id="cOutBox"><div class="empty">Preencha valor e km para ver a conta.</div></div>
+  <button type="button" class="btn main" style="width:100%" data-act="calcSave">Fiz este frete — salvar</button>`);
+  ['cVal','cKm','cH','cOut','cKml','cPr'].forEach(id=>document.getElementById(id).oninput=calcUpd)}
+function calcData(){const v=parseMoney(val('cVal')),km=parseNum(val('cKm')),h=parseNum(val('cH')),ot=parseMoney(val('cOut'))||0,kml=parseNum(val('cKml')),pr=parseMoney(val('cPr'));
+  if(!(v>0)||!(km>0)||!(kml>0)||!(pr>0))return null;const comb=Math.round(km/kml*pr);const res=v-comb-ot;return{v,km,h,ot,comb,res,kml,pr}}
+function calcUpd(){const c=calcData();const b=document.getElementById('cOutBox');
+  if(!c){b.innerHTML='<div class="empty">Preencha valor e km para ver a conta.</div>';return}
+  b.innerHTML=`<div class="row"><span>Valor do frete</span><span class="v">${R(c.v)}</span></div>
+  <div class="row"><span>Combustível <span class="sub">(${brNum(c.km/c.kml)} L)</span></span><span class="v">− ${R(c.comb)}</span></div>
+  ${c.ot?`<div class="row"><span>Outros custos</span><span class="v">− ${R(c.ot)}</span></div>`:''}
+  <div class="row total"><b>Sobra</b><span class="v ${c.res<0?'neg':''}">${R(c.res)}</span></div>
+  <div class="kpis" style="margin-top:10px"><div class="kpi"><div class="n">${R(Math.round(c.res/c.km))}</div><div class="l">por km</div></div>
+  <div class="kpi"><div class="n">${c.h>0?R(Math.round(c.res/c.h)):'—'}</div><div class="l">${c.h>0?'por hora':'informe o tempo para ver por hora'}</div></div></div>`}
+
+/* ---------- toast ---------- */
+let tTimer,undoFn=null;
+function toast(t,btn,fn){const el=document.getElementById('toast');document.getElementById('toastTxt').textContent=t;const b=document.getElementById('toastBtn');
+  b.textContent=btn||'';b.style.display=btn?'block':'none';undoFn=fn||null;el.classList.add('show');clearTimeout(tTimer);tTimer=setTimeout(()=>el.classList.remove('show'),btn?6000:2200)}
+document.getElementById('toastBtn').onclick=()=>{if(undoFn)undoFn();document.getElementById('toast').classList.remove('show')};
+
+/* ---------- confirmação ---------- */
+function confirmar(txt,okTxt,fn){openSheet(`<h3>${txt}</h3><div class="two"><button type="button" class="btn line" data-act="close">Cancelar</button><button type="button" class="btn main" style="grid-column:auto;background:var(--red)" id="okBtn">${okTxt}</button></div>`);
+  document.getElementById('okBtn').onclick=()=>{fn();closeSheet();render()}}
+
+/* ---------- eventos ---------- */
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-tab],[data-act]');if(!t)return;
+  if(t.dataset.tab){tab=t.dataset.tab;render();return}
+  const a=t.dataset.act;
+  if(a==='novo')sheetForm(t.dataset.tipo,null,t.dataset.d);
+  else if(a==='edit'){const l=S.lanc.find(x=>x.id===t.dataset.id);if(l)sheetForm(l.tipo,l)}
+  else if(a==='del'){const i=S.lanc.findIndex(x=>x.id===t.dataset.id);if(i<0)return;const[l]=S.lanc.splice(i,1);save();render();
+    toast('Lançamento apagado.','Desfazer',()=>{S.lanc.splice(i,0,l);save();render()})}
+  else if(a==='close')closeSheet();
+  else if(a==='saveMore')submitEntry(true);
+  else if(a==='cat'){cat=t.dataset.c;document.querySelectorAll('#fCats button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.c===cat))}
+  else if(a==='abMode'){if(t.dataset.m===abMode)return;const c=abCalc();
+    if(abMode==='preco'){abInit.preco=val('fAux');if(c)abInit.litros=inp(c.litros,2)}else{abInit.litros=val('fAux');if(c)abInit.preco=inp(c.preco/100,2)}
+    abMode=t.dataset.m;document.querySelectorAll('[data-act=abMode]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===abMode));abAux()}
+  else if(a==='calc')calcSheet();
+  else if(a==='calcSave'){const c=calcData();if(!c){toast('Preencha valor e km primeiro.');return}
+    S.lanc.push({id:uid(),tipo:'viagem',data:TODAY,valor:c.v,desc:'Frete calculado',km:Math.round(c.km),...(c.h>0?{min:Math.round(c.h*60)}:{})});
+    if(c.ot)S.lanc.push({id:uid(),tipo:'despesa',data:TODAY,valor:c.ot,cat:'Pedágio',desc:'Do frete calculado'});
+    save();closeSheet();tab='hoje';render();toast('Frete salvo em hoje.')}
+  else if(a==='vermes'){tab='rel';rep={modo:'mes',ref:TODAY};render()}
+  else if(a==='dia'){tab='rel';rep={modo:'dia',ref:t.dataset.d};render()}
+  else if(a==='modo'){rep.modo=t.dataset.m;chartSel=null;render()}
+  else if(a==='prev'){shift(-1);render()}
+  else if(a==='next'){const[,b]=range();if(b<TODAY){shift(1);render()}}
+  else if(a==='bar'){chartSel=t.dataset.d;const y=window.scrollY;render();window.scrollTo(0,y)}
+  else if(a==='share'){const txt=shareText();
+    const done=()=>toast('Resumo copiado. É só colar no WhatsApp.');
+    try{navigator.clipboard.writeText(txt).then(done,()=>showCopy(txt))}catch(err){showCopy(txt)}}
+  else if(a==='fs'){S.settings.fs=+t.dataset.v;applyFs();save();render()}
+  else if(a==='limpar')confirmar('Apagar todos os lançamentos e começar do zero?','Apagar tudo',()=>{S.lanc=[];S.demo=false;save()});
+  else if(a==='reset')confirmar('Trocar seus dados pelos valores de exemplo?','Trocar',()=>{S.lanc=seed();S.demo=true;save()});
+});
+function showCopy(txt){openSheet(`<h3>Resumo<button type="button" class="icon-btn" data-act="close" aria-label="Fechar">${I.x}</button></h3><div class="sub" style="margin-bottom:8px">Segure o texto, selecione tudo e copie.</div><textarea class="copy" readonly>${esc(txt)}</textarea>`)}
+document.addEventListener('submit',e=>{e.preventDefault();
+  if(e.target.id==='fForm')submitEntry(false);
+  if(e.target.id==='ajForm'){const m=parseMoney(val('aMeta')),mm=parseMoney(val('aMes')),k=parseNum(val('aKml')),p=parseMoney(val('aPreco'));
+    if(!(m>0)||!(k>0)||!(p>0)){document.getElementById('ajErr').textContent='Confira os valores: todos precisam ser maiores que zero.';return}
+    Object.assign(S.settings,{metaDia:m,metaMes:mm>0?mm:0,kml:k,preco:p});save();toast('Ajustes salvos.');render()}});
+document.getElementById('sheetBg').addEventListener('click',e=>{if(e.target.id==='sheetBg')closeSheet()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
+/* no máximo 2 casas depois da vírgula */
+document.addEventListener('input',e=>{const el=e.target;if(!el.matches||!el.matches('input[inputmode=decimal],input[inputmode=numeric]'))return;
+  let v=el.value;
+  if(el.inputMode==='numeric')v=v.replace(/\D/g,'');
+  else{v=v.replace(/\./g,',').replace(/[^\d,]/g,'');const i=v.indexOf(',');if(i>=0)v=v.slice(0,i+1)+v.slice(i+1).replace(/,/g,'').slice(0,2);if(v[0]===',')v='0'+v}
+  if(v!==el.value)el.value=v},true);
+function applyFs(){document.documentElement.style.setProperty('--fs',(S.settings.fs||18)+'px')}
+applyFs();render();
+</script>
+</body>
+</html>

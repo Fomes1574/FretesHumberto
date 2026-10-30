@@ -1,0 +1,16 @@
+node_modules/
+src/prototipo-check.js
+__pycache__/
+*.pyc
+.gradle/
+**/build/
+local.properties
+keystore.properties
+*.jks
+*.keystore
+google-services.json
+*.fretes
+!tests/fixtures/restauracao-teste.fretes
+backups/
+*.log
+# docs/prototipo.html e o bundle devem ficar versionados: abrem sem build.

@@ -1,0 +1,16 @@
+{
+  "name": "fretes-humberto-prototipo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node serve.mjs",
+    "test": "node --test tests/*.test.cjs",
+    "build:crypto": "esbuild src/backup-crypto.js --bundle --format=iife --global-name=FretesCrypto --target=es2022 --minify --outfile=src/backup-crypto.bundle.js",
+    "build:html": "python3 src/build.py"
+  },
+  "devDependencies": {
+    "@noble/ciphers": "2.4.0",
+    "@noble/hashes": "2.4.0",
+    "esbuild": "0.28.2"
+  }
+}
