@@ -2,7 +2,7 @@
 # Combinação compatível com compileSdk 36. Para subir Compose além de 2026.07 é preciso
 # compileSdk 37 e AGP 9.1.1+ — faça isso numa etapa própria, com o build verde.
 [versions]
-agp = "9.0.1"
+agp = "9.5.0"
 kotlin = "2.3.20"
 ksp = "2.3.5"
 composeBom = "2026.03.00"
