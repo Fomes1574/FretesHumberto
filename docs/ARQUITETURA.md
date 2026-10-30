@@ -187,7 +187,7 @@ Fretes e despesas são registrados separadamente, um por vez. A ordem de cadastr
 | Abrir o app | A van sai do início e anda até a posição do lucro atual |
 | Lançar um frete abaixo da meta | A van **arranca, acelera e freia** até a nova posição. A estrada corre mais rápido que a van e as rodas giram na mesma velocidade |
 | Bater a meta | A van **atravessa a linha de chegada** e estaciona do outro lado. Ao cruzar, sai **confete** da bandeira, que cai e fica no asfalto por ~5 s |
-| Lançar valores **acima da meta** | **Só o número sobe.** A van e a estrada ficam paradas |
+| Lançar valores **acima da meta** | O número mostra o **valor final na hora**. A van e a estrada ficam paradas |
 | Apagar ou corrigir e ficar **abaixo da meta** | A van **dá ré**, atravessa a linha de volta e para na posição certa. A estrada e as rodas andam ao contrário e não há confete |
 | Trocar de aba e voltar | Nenhuma animação se nada mudou |
 | "Reduzir movimento" ligado no Android | A van vai direto à posição final, sem animação nem confete |
@@ -357,25 +357,34 @@ Somente para ver os mesmos dados em dois celulares ao mesmo tempo, por exemplo o
 
 ---
 
-## 10. Estrutura sugerida do repositório
+## 10. Estrutura do repositório
+
+Criada em 30/10/2026. O módulo `:core` já tem as regras portadas e testadas; o `:app` é o esqueleto Compose das quatro abas.
 
 ```
 FretesHumberto/
-├─ app/
-│  └─ src/main/java/.../fretes/
-│     ├─ data/        (Room: entidades, DAOs, banco, migrações)
-│     ├─ domain/      (cálculos: lucro, metas, combustível, médias)
-│     ├─ ui/
-│     │  ├─ hoje/  historico/  relatorios/  ajustes/
-│     │  ├─ lancamento/   (frete, abasteci, despesa, calculadora)
-│     │  └─ estrada/      (cena animada da meta)
-│     └─ backup/      (exportar / restaurar)
-├─ docs/
-│  ├─ ARQUITETURA.md  (este arquivo)
-│  ├─ prototipo.html  (protótipo navegável)
-│  └─ img/
-├─ .github/workflows/build.yml
-└─ .gitignore
+├─ core/                        (Kotlin puro, sem Android — ./gradlew :core:test)
+│  └─ src/main/kotlin/.../core/
+│     ├─ Dinheiro.kt            (parse, arredondamento, filtro de digitação, Formato)
+│     ├─ Datas.kt               (semana seg–dom, mês, período, comparação, 6 meses)
+│     ├─ Modelo.kt              (Lancamento, Metas, textoMeta)
+│     ├─ Calculos.kt            (Relatorio.resumir, Calculadora, Combustivel)
+│     ├─ Recorrencias.kt        (contas do mês, vencimento, geração idempotente)
+│     ├─ Diario.kt              (salvar, apagar, desfazer, conferir — vira transação Room)
+│     └─ Estrada.kt             (posição da van, confete, curva, borrão das rodas)
+├─ app/                         (Android: Compose + Material 3)
+│  └─ src/main/kotlin/io/github/fomes1574/freteshumberto/
+│     ├─ MainActivity.kt
+│     ├─ ui/FretesApp.kt        (quatro abas; telas a construir)
+│     ├─ ui/theme/Tema.kt       (cores, Atkinson Hyperlegible, tipografia)
+│     ├─ data/                  (etapa 2: Room, DAOs, repositório)
+│     ├─ ui/hoje/ historico/ relatorios/ ajustes/ lancamento/ estrada/   (etapa 3)
+│     ├─ contas/                (etapa 4: WorkManager)
+│     └─ backup/                (etapa 5)
+├─ docs/                        (regras, decisões, plano, protótipo)
+├─ src/ tests/                  (protótipo web e seus 32 testes Node)
+├─ .github/workflows/android.yml
+└─ CLAUDE.md / AGENTS.md
 ```
 
 ---
@@ -396,6 +405,7 @@ FretesHumberto/
 | v1 | Corrigir interpretação de dinheiro, edição de duração, referência de preço e falhas silenciosas de gravação |
 | v2 | Exportar resumo mensal em CSV/PDF |
 | v2 | Manutenção e troca de óleo por km |
+| v1.1+ | Melhorias inspiradas em outros apps: ver [MELHORIAS_PESQUISADAS.md](MELHORIAS_PESQUISADAS.md) |
 | Futuro | Sincronização entre dois celulares (seção 8) |
 
 ### Regras já definidas para as contas do mês (v1)
@@ -415,7 +425,7 @@ FretesHumberto/
 2. Calculadora com R$ 80,00, 40 km, 8 km/l, R$ 4,00/l e 1,5 h → combustível R$ 20,00, sobra R$ 60,00, **R$ 1,50/km** e **R$ 40,00/h**. *(Conferido no protótipo.)*
 3. Abasteci com R$ 200,00 e preço R$ 3,70 → **54,05 L**. Com R$ 200,00 e 54,05 L → **R$ 3,70/L**. *(Conferido no protótipo.)*
 4. Digitar `54.0599` num campo decimal resulta em `54,05`. *(Conferido no protótipo.)*
-5. Lucro acima da meta → só o número sobe: a posição da van e da estrada não muda. *(Medido no protótipo.)*
+5. Lucro acima da meta → o valor final aparece na hora e a posição da van e da estrada não muda. *(Medido no protótipo; regra em `core/Estrada.kt`.)*
 6. Apagar um frete e ficar abaixo da meta → a van volta à posição proporcional, sem confete. *(Medido no protótipo.)*
 7. Cruzar a meta → a van termina depois da linha e o confete aparece uma única vez.
 8. Salvar com toque duplo cria um único lançamento.

@@ -1,5 +1,16 @@
 # Histórico de alterações
 
+## 30/10/2026 — Início do Android
+
+- Decisões técnicas fechadas: minSdk 26, target/compile 36, `applicationId` `io.github.fomes1574.freteshumberto`, backup automático do Google ligado, Android começa do zero (sem importar o protótipo), valor do lucro aparece na hora.
+- Projeto Gradle com módulos `:core` (Kotlin puro) e `:app` (Compose), catálogo de versões e wrapper do Gradle 9.3.0.
+- Regras portadas para Kotlin em `core/`: dinheiro, datas, resumo, metas, calculadora, combustível, preço de referência, contas do mês, diário (salvar/apagar/desfazer/conferir) e estrada da meta. 39 testes passando.
+- Esqueleto do app: quatro abas, tema bege/verde, fonte Atkinson Hyperlegible, ícone adaptativo com a Fiorino, regras de backup.
+- GitHub Actions: testes do protótipo e do Android, APK debug a cada push, APK release assinado por tag. Dependabot mensal.
+- `CLAUDE.md`, comandos `/proxima-etapa` e `/conferir`, guia da chave de assinatura e pesquisa de melhorias em outros apps.
+- Corrigida contradição na ARQUITETURA.md: acima da meta o valor final aparece na hora (sem contagem).
+- O `:app` ainda não foi compilado; nenhum APK gerado.
+
 ## 30/10/2026 — Documentação e entrega no repositório
 
 - Organizada a documentação de objetivo, regras, arquitetura, decisões, testes e roteiro Android.

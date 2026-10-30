@@ -80,3 +80,10 @@ A fixture fictícia de restauração está em `tests/fixtures/restauracao-teste.
 ## Como registrar próximos resultados
 
 Informar data, commit, comando ou fluxo, esperado, observado, aparelho/ambiente e limitações. Distinguir falha do produto de limitação de teste. Não afirmar salvamento de arquivo só porque foi gerado um Blob, nem funcionamento nativo porque o teste Node passou.
+
+## Testes Kotlin do módulo `:core` (30/10/2026)
+
+`core/src/test/kotlin/.../RegrasTest.kt` repete os casos do protótipo em Kotlin e acrescenta casos de formatação, preço médio, dia só com gastos, alteração "só deste mês" e regras da estrada: **39 testes, todos passando**. Foram compilados e executados com o compilador Kotlin 2.0.21 embutido no Gradle, fora do Gradle (o ambiente não tinha acesso ao Maven). O projeto usa Kotlin 2.3.20; rodar `./gradlew :core:test` para confirmar no build oficial.
+
+Não foram executados: build do `:app`, testes instrumentados, emulador ou aparelho físico.
+

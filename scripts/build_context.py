@@ -6,9 +6,10 @@ import re
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'docs/CONTEXTO_COMPLETO.md'
 SOURCES = [
-    'README.md', 'AGENTS.md', 'docs/REGRAS_DE_NEGOCIO.md',
+    'README.md', 'CLAUDE.md', 'AGENTS.md', 'docs/REGRAS_DE_NEGOCIO.md',
     'docs/DECISOES.md', 'docs/ESTADO_ATUAL.md', 'docs/ARQUITETURA.md',
-    'docs/PLANO_ANDROID.md', 'docs/TESTES.md', 'CHANGELOG.md', 'design-qa.md',
+    'docs/PLANO_ANDROID.md', 'docs/TESTES.md', 'docs/CHAVE_ASSINATURA.md',
+    'docs/MELHORIAS_PESQUISADAS.md', 'CHANGELOG.md', 'design-qa.md',
 ]
 
 def rebase_link(target, source):
@@ -36,7 +37,7 @@ def convert(text, source):
 
 parts = [
     '# Meus Fretes — contexto completo para programação\n',
-    '> Consolidação de 30/10/2026. Projeto e protótipo web; Android ainda não implementado.\n'
+    '> Consolidação de 30/10/2026. Protótipo web pronto; Android em construção (`:core` com regras e testes, `:app` em esqueleto).\n'
     '> Arquivo gerado por `scripts/build_context.py`. Edite os documentos-fonte e regenere; '
     'não mantenha uma segunda especificação manual aqui.\n',
     'Esta cópia reúne objetivo, instruções, regras, decisões, estado, arquitetura, plano, '

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tema da janela antes do Compose desenhar: fundo bege, sem barra de título. -->
+    <style name="Theme.MeusFretes" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/fundo</item>
+    </style>
+    <color name="fundo">#F3F0E8</color>
+    <color name="verde">#17603F</color>
+</resources>

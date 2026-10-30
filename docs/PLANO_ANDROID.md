@@ -1,12 +1,12 @@
 # Plano de implementação Android
 
-**Proposta técnica, ainda não implementada.** Os requisitos do produto já estão definidos em [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md). Esta sequência organiza a construção sem ampliar o escopo ou pressupor APK existente.
+**Em andamento desde 30/10/2026.** Etapa 1 parcialmente pronta (ver abaixo); etapas 2 a 6 por fazer. Os requisitos do produto já estão definidos em [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md). Esta sequência organiza a construção sem ampliar o escopo ou pressupor APK existente.
 
 ## Direção
 
 Kotlin, Jetpack Compose/Material 3, ViewModels, Room, DataStore e WorkManager. Um aplicativo local, com regras testáveis fora da UI e sem backend. Uma aplicação/módulo inicial é suficiente; não criar microserviços ou dividir em muitos módulos sem necessidade.
 
-Escolher versões estáveis compatíveis do toolchain no início da implementação, registrar no catálogo de versões e manter wrapper/lockfiles apropriados. Não usar um número de versão imaginado nesta documentação como evidência de compatibilidade.
+Versões escolhidas e registradas em `gradle/libs.versions.toml` (motivo em [DECISOES.md](DECISOES.md)). Se o primeiro sync falhar por uma versão, trocar pela estável compatível mais próxima e registrar a troca; não mudar a combinação inteira sem necessidade.
 
 | Camada | Responsabilidade |
 |---|---|
@@ -46,12 +46,22 @@ Data financeira é `LocalDate`/conversor equivalente, não timestamp UTC à meia
 
 ### 1. Base e domínio
 
-- Criar projeto Android, configuração reproduzível e quatro destinos de navegação.
-- Implementar/parser monetário, intervalos, cálculos, vigências e simulador em Kotlin.
-- Portar os exemplos Node para testes Kotlin, com resultados exatos em centavos.
-- Registrar SDK mínimo/target, ID do aplicativo e versões escolhidas. São decisões técnicas ainda não fixadas nesta entrega.
+**Já feito (30/10/2026):**
 
-**Saída:** testes de domínio passam; nenhum servidor ou IA é necessário.
+- [x] Projeto Gradle com `:core` (Kotlin/JVM) e `:app` (Android/Compose), catálogo de versões e wrapper do Gradle 9.3.0.
+- [x] SDK mínimo 26, target/compile 36, `applicationId` `io.github.fomes1574.freteshumberto` (DECISOES.md).
+- [x] Regras portadas para Kotlin em `core/`: dinheiro, datas, resumo do período, metas, calculadora, combustível, preço de referência, contas do mês, diário (salvar/apagar/desfazer/conferir) e regras da estrada.
+- [x] 39 testes JUnit em `core/src/test` com os mesmos casos do protótipo, **todos passando** (compilados com Kotlin 2.0.21 fora do Gradle; rodar de novo com `./gradlew :core:test`).
+- [x] Esqueleto do app: quatro abas com ícone e texto, tema bege/verde, Atkinson Hyperlegible em `res/font`, ícone adaptativo com a Fiorino, backup do Google configurado.
+- [x] Workflow do GitHub Actions: testes + APK debug a cada push; APK release assinado quando houver Secrets.
+
+**Falta para fechar a etapa 1:**
+
+- [ ] Primeiro `./gradlew :core:test :app:assembleDebug` verde (Actions ou Android Studio). O `:app` ainda não foi compilado.
+- [ ] Abrir o APK debug num emulador/celular e ver as quatro abas.
+- [ ] Ajustar qualquer versão que o sync recusar e registrar em DECISOES.md.
+
+**Saída:** testes de domínio passam no Gradle; APK debug abre; nenhum servidor ou IA é necessário.
 
 ### 2. Banco e operações
 
@@ -83,7 +93,7 @@ Data financeira é `LocalDate`/conversor equivalente, não timestamp UTC à meia
 
 ### 5. Cópia e restauração
 
-- Definir DTO versionado, validação completa e compatibilidade/migração do envelope do protótipo.
+- Definir DTO versionado e validação completa. **Não é preciso importar cópias do protótipo** (decisão de 30/10/2026: o motorista não usa o protótipo com dados reais).
 - Usar seletor de arquivo Android; confirmar stream gravado antes de atualizar data da cópia.
 - Restaurar com validação e substituição transacional; se falhar, preservar banco anterior.
 - Testar senha incorreta, adulteração, formato futuro, arquivo truncado, cancelamento, pouco espaço e restauração de todas as versões/exceções.

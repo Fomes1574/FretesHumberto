@@ -1,24 +1,24 @@
 # Estado atual e mapa do código
 
-Revisão documental: 30/10/2026. Código funcional proveniente da atualização do protótipo de 29/10/2026. Nesta entrega ao GitHub não houve desenvolvimento de Android.
+Revisão: 30/10/2026. Protótipo web de 29/10/2026 + **início do Android em 30/10/2026**: módulo `:core` com as regras em Kotlin (39 testes passando) e esqueleto do `:app` (Compose, quatro abas, tema, ícone, backup). O `:app` ainda não foi compilado; a primeira compilação acontece no GitHub Actions ou no Android Studio.
 
 ## Implementado versus previsto
 
 | Área | Protótipo atual | Android |
 |---|---|---|
-| Hoje, Histórico, Relatórios, Ajustes | Implementados em HTML/JS | Pendente |
-| Fretes, abastecimentos e despesas independentes | Implementados | Pendente |
-| Calculadora isolada | Implementada, sem gravação no diário | Pendente |
-| Metas por vigência/mês | Implementadas | Pendente |
-| Dia, semana, mês, personalizado e dois dias | Implementados | Pendente |
-| Recorrências com versões, exceções e mês pulado | Implementadas ao abrir/retomar | WorkManager e Room pendentes |
-| Gráficos e estrada/Fiorino | SVG/JS, preservando a referência visual | Compose Canvas pendente |
+| Hoje, Histórico, Relatórios, Ajustes | Implementados em HTML/JS | Esqueleto: abas, tema e cartão do lucro; telas pendentes |
+| Fretes, abastecimentos e despesas independentes | Implementados | Regras em `core/Diario.kt` e `Calculos.kt` (testadas); banco pendente |
+| Calculadora isolada | Implementada, sem gravação no diário | `core/Calculos.kt` (testada); tela pendente |
+| Metas por vigência/mês | Implementadas | `core/Modelo.kt` (testadas); persistência pendente |
+| Dia, semana, mês, personalizado e dois dias | Implementados | `core/Datas.kt` e `Relatorio.resumir` (testados); telas pendentes |
+| Recorrências com versões, exceções e mês pulado | Implementadas ao abrir/retomar | `core/Recorrencias.kt` (testada); WorkManager e Room pendentes |
+| Gráficos e estrada/Fiorino | SVG/JS, preservando a referência visual | Regras em `core/Estrada.kt` (testadas); Canvas pendente |
 | Conferência e desfazer exclusão | Implementados | Pendente |
 | Cópia validada e senha opcional | Implementadas; salvamento físico não confirmado na automação | Seletor de arquivos e recuperação pendentes |
-| Armazenamento | `localStorage` do navegador | Room e DataStore pendentes |
+| Armazenamento | `localStorage` do navegador | Room e DataStore no catálogo de versões; backup do Google configurado no manifesto |
 | A/A+/A++ | Implementados; inspeção em largura de celular | Escala Android/TalkBack/teclado pendentes |
 | CSV/PDF, biometria, manutenção por km | Não implementados | Melhorias futuras |
-| APK, assinatura, CI de build, atualização instalada | Não existem | Pendentes |
+| APK, assinatura, CI de build, atualização instalada | Não existem | Workflow e assinatura por Secrets preparados; nenhum APK gerado ainda |
 | Backend, login, IA, integração Lalamove | Fora do escopo | Não implementar sem mudança de escopo |
 
 ## Fonte do protótipo
