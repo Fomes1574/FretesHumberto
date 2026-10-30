@@ -39,7 +39,8 @@ class CopiaInvalida(val mensagem: String) : Exception(mensagem)
 object Copia {
     const val FORMATO = "meus-fretes"
     const val FORMATO_CIFRADO = "meus-fretes-cifrado"
-    const val VERSAO = 1
+    /** Versão 2: sem meta mensal e sem conferência de dia (30/10/2026). A versão 1 ainda é lida. */
+    const val VERSAO = 2
     const val ITERACOES = 210_000
     private const val MAX_LANCAMENTOS = 200_000
     private const val MAX_CONTAS = 500
@@ -57,12 +58,8 @@ object Copia {
             put("metasDiarias", buildJsonArray {
                 e.metas.diarias.sortedBy { it.desde }.forEach { add(buildJsonObject { put("desde", it.desde.toString()); put("valor", it.valor) }) }
             })
-            put("metasMensais", buildJsonObject { e.metas.mensais.toSortedMap().forEach { (m, v) -> put(m.toString(), v) } })
-            put("metaMensalBase", e.metas.baseMensal)
             put("contas", buildJsonArray { e.contas.forEach { add(conta(it)) } })
             put("ocorrencias", buildJsonArray { e.diario.ocorrencias.values.sortedBy { it.chave }.forEach { add(ocorrencia(it)) } })
-            put("revisoes", buildJsonObject { e.diario.revisoes.toSortedMap().forEach { (d, v) -> put(d.toString(), v) } })
-            put("conferidos", buildJsonObject { e.diario.conferidos.toSortedMap().forEach { (d, v) -> put(d.toString(), v) } })
             put("ajustes", buildJsonObject {
                 put("kmPorLitro", e.ajustes.kmPorLitroCentesimos)
                 put("precoManual", buildJsonObject {
@@ -182,10 +179,8 @@ object Copia {
         }
         if (diarias.isEmpty()) throw CopiaInvalida("A cópia não tem meta diária.")
         if (diarias.map { it.desde }.toSet().size != diarias.size) throw CopiaInvalida("Meta diária repetida.")
-        val mensais = (raiz["metasMensais"] as? JsonObject ?: throw CopiaInvalida("Metas mensais ausentes.")).map { (k, v) ->
-            mes(k) to naoNegativo((v as? JsonPrimitive)?.longOrNull, "Meta mensal inválida.")
-        }.toMap()
-        val metas = Metas(diarias.sortedBy { it.desde }, mensais, naoNegativo(longo(raiz, "metaMensalBase"), "Meta mensal inválida."))
+        // Cópias da versão 1 ainda trazem meta mensal e conferências: são ignoradas.
+        val metas = Metas(diarias.sortedBy { it.desde })
 
         val contasJson = lista(raiz, "contas")
         if (contasJson.size > MAX_CONTAS) throw CopiaInvalida("A cópia tem contas do mês demais.")
@@ -238,24 +233,14 @@ object Copia {
             if (l.ocorrencia != null && l.tipo != Tipo.DESPESA) throw CopiaInvalida("Só despesas podem vir de conta do mês.")
         }
 
-        val revisoes = mapaDias(raiz, "revisoes")
-        val conferidos = mapaDias(raiz, "conferidos")
-
         val aj = raiz["ajustes"] as? JsonObject ?: throw CopiaInvalida("Ajustes ausentes.")
         val pm = aj["precoManual"] as? JsonObject ?: throw CopiaInvalida("Referência de preço inválida.")
         val ajustes = Ajustes(
             kmPorLitroCentesimos = positivo(longo(aj, "kmPorLitro"), "Consumo inválido."),
             precoManual = Combustivel.ReferenciaManual(data(texto(pm, "data")), positivo(longo(pm, "preco"), "Referência de preço inválida."), texto(pm, "carimbo") ?: ""),
         )
-        return Estado(Diario(lancamentos, occ, revisoes, conferidos), contas, metas, ajustes)
+        return Estado(Diario(lancamentos, occ), contas, metas, ajustes)
     }
-
-    private fun mapaDias(raiz: JsonObject, campo: String): Map<LocalDate, Int> =
-        (raiz[campo] as? JsonObject ?: throw CopiaInvalida("Campo $campo ausente.")).map { (k, v) ->
-            val n = (v as? JsonPrimitive)?.intOrNull ?: throw CopiaInvalida("Revisão inválida.")
-            if (n < 0) throw CopiaInvalida("Revisão inválida.")
-            data(k) to n
-        }.toMap()
 
     private fun texto(o: JsonObject, campo: String): String? {
         val v = o[campo] ?: return null
@@ -290,8 +275,6 @@ object Copia {
     }
 
     private fun positivo(v: Long?, msg: String): Long = v?.takeIf { it in 1..Dinheiro.MAX } ?: throw CopiaInvalida(msg)
-
-    private fun naoNegativo(v: Long?, msg: String): Long = v?.takeIf { it in 0..Dinheiro.MAX } ?: throw CopiaInvalida(msg)
 
     private inline fun <reified T : Enum<T>> enumOu(s: String?): T? = enumValues<T>().firstOrNull { it.name == s }
 

@@ -58,7 +58,6 @@ class AcoesHoje(
     val calcular: () -> Unit,
     val editar: (Lancamento) -> Unit,
     val apagar: (Lancamento) -> Unit,
-    val conferir: (LocalDate) -> Unit,
     val verMes: () -> Unit,
     val irCopia: () -> Unit,
 )
@@ -98,7 +97,6 @@ fun TelaHoje(e: Estado, hoje: LocalDate, posicoes: MutableMap<String, Float>, le
             TituloCartao("Lançado hoje")
             if (doDia.isEmpty()) TextoApagado("Nada anotado ainda hoje.")
             ListaLancamentos(doDia, acoes.editar, acoes.apagar)
-            if (doDia.isNotEmpty()) BotaoLinha(Textos.conferencia(e.diario, hoje), { acoes.conferir(hoje) }, icone = R.drawable.ic_conferido)
         }
 
         Cartao {

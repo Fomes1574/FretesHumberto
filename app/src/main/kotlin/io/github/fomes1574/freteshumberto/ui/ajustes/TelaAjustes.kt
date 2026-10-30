@@ -54,7 +54,7 @@ import java.time.YearMonth
 import java.time.ZoneId
 
 class AcoesAjustes(
-    val salvar: (metaDia: Long, mes: YearMonth, metaMes: Long, kmPorLitro: Long, preco: Long) -> Unit,
+    val salvar: (metaDia: Long, kmPorLitro: Long, preco: Long) -> Unit,
     val mudarLetra: (TamanhoLetra) -> Unit,
     val contas: () -> Unit,
     val fazerCopia: (android.net.Uri, String?) -> Unit,
@@ -74,8 +74,6 @@ fun TelaAjustes(
     acoes: AcoesAjustes,
 ) {
     var metaDia by rememberSaveable { mutableStateOf(Formato.paraCampo(e.metas.doDia(hoje))) }
-    var mes by rememberSaveable { mutableStateOf(YearMonth.from(hoje).toString()) }
-    var metaMes by rememberSaveable(mes) { mutableStateOf(Formato.paraCampo(e.metas.doMes(YearMonth.parse(mes)))) }
     var consumo by rememberSaveable { mutableStateOf(Formato.paraCampo(e.ajustes.kmPorLitroCentesimos)) }
     var preco by rememberSaveable { mutableStateOf(Formato.paraCampo(e.precoReferencia())) }
     var erro by rememberSaveable { mutableStateOf<String?>(null) }
@@ -99,15 +97,7 @@ fun TelaAjustes(
         TituloTela("Ajustes")
         Cartao {
             CampoNumero("Meta de lucro por dia", metaDia, { metaDia = it; erro = null }, grande = true)
-            TextoApagado("A nova meta diária vale a partir de hoje. Os dias anteriores ficam com a meta que tinham.")
-            Text("Meta do mês", style = MaterialTheme.typography.titleMedium)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                BotaoIcone(R.drawable.ic_esquerda, "Mês anterior", { mes = YearMonth.parse(mes).minusMonths(1).toString() })
-                Text(DataTexto.mes(YearMonth.parse(mes)), style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
-                BotaoIcone(R.drawable.ic_direita, "Mês seguinte", { mes = YearMonth.parse(mes).plusMonths(1).toString() })
-            }
-            CampoNumero("Meta de lucro de ${DataTexto.mes(YearMonth.parse(mes))}", metaMes, { metaMes = it; erro = null }, grande = true)
-            TextoApagado("Mudar a meta do mês muda só o mês escolhido.")
+            TextoApagado("A meta nova vale para hoje e para os próximos dias. Os dias que já passaram continuam com a meta que tinham.")
             Par(
                 { m -> CampoNumero("Consumo (km por litro)", consumo, { consumo = it; erro = null }, m, prefixo = null) },
                 { m -> CampoNumero("Preço do litro", preco, { preco = it; erro = null }, m) },
@@ -115,14 +105,13 @@ fun TelaAjustes(
             TextoApagado("O preço do litro se atualiza sozinho com o abastecimento mais recente. Mudar estes valores não altera dias que já passaram.")
             Erro(erro)
             Botao("Salvar ajustes", {
-                val md = Dinheiro.parse(metaDia); val mm = Dinheiro.parse(metaMes)
+                val md = Dinheiro.parse(metaDia)
                 val c = Dinheiro.parse(consumo); val p = Dinheiro.parse(preco)
                 when {
                     md == null || md <= 0 -> erro = "Confira a meta do dia. Ex.: 250,00."
-                    mm == null -> erro = "Confira a meta do mês. Ex.: 5500,00."
                     c == null || c <= 0 || c > 100_000 -> erro = "Confira o consumo. Ex.: 8,5."
                     p == null || p <= 0 -> erro = "Confira o preço do litro. Ex.: 3,79."
-                    else -> acoes.salvar(md, YearMonth.parse(mes), mm, c, p)
+                    else -> acoes.salvar(md, c, p)
                 }
             }, ligado = !ocupado)
         }

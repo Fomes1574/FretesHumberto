@@ -119,11 +119,7 @@ object Textos {
     /** Texto para mandar pelo WhatsApp. Porta de `shareText`. */
     fun resumoParaEnviar(filtro: FiltroRelatorio, r: Resumo, metas: Metas): String {
         val p = filtro.intervalo()
-        val meta = when (filtro.modo) {
-            ModoRelatorio.DIA -> "\nMeta do dia: ${Formato.reais(metas.doDia(p.inicio))}"
-            ModoRelatorio.MES -> "\nMeta do mês: ${Formato.reais(metas.doMes(YearMonth.from(p.inicio)))}"
-            else -> ""
-        }
+        val meta = if (filtro.modo == ModoRelatorio.DIA) "\nMeta do dia: ${Formato.reais(metas.doDia(p.inicio))}" else ""
         return "Meus Fretes — ${filtro.rotulo()}\n" +
             "Fretes: ${Formato.reais(r.fretes)} (${r.qtdFretes})\n" +
             "Combustível: ${Formato.reais(r.combustivel)}\n" +
@@ -134,13 +130,6 @@ object Textos {
     fun fretes(n: Int) = "$n frete${if (n == 1) "" else "s"}"
 
     fun abastecimentos(n: Int) = "$n abastecimento${if (n == 1) "" else "s"}"
-
-    /** Texto do botão de conferência (R06). Conferir nunca bloqueia edição. */
-    fun conferencia(di: Diario, d: LocalDate): String = when {
-        di.conferidos[d] == null -> "Conferir dia"
-        di.conferidoAtual(d) -> "Dia conferido"
-        else -> "Alterado após a conferência"
-    }
 }
 
 data class DiaHistorico(
@@ -151,7 +140,6 @@ data class DiaHistorico(
     /** Null em dia sem frete: só dias trabalhados contam para a meta (R06). */
     val metaAtingida: Boolean?,
     val textoMeta: String?,
-    val conferido: Boolean,
 )
 
 data class MesHistorico(val mes: YearMonth, val lucro: Long, val dias: List<DiaHistorico>)
@@ -168,7 +156,6 @@ object Historico {
                     data = d, lucro = r.lucro, fretes = r.qtdFretes, abasteceu = r.qtdAbastecimentos > 0,
                     metaAtingida = if (r.qtdFretes > 0) r.lucro >= meta else null,
                     textoMeta = if (r.qtdFretes > 0) textoMeta(r.lucro, meta) else null,
-                    conferido = di.conferidoAtual(d),
                 )
             }
             MesHistorico(mes, dias.sumOf { it.lucro }, dias)

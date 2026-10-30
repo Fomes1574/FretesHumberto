@@ -185,7 +185,6 @@ private fun Abas(vm: FretesViewModel, e: Estado, aba: Aba, hoje: java.time.Local
                 calcular = { vm.abrir(Sobreposta.Calculadora) },
                 editar = editar,
                 apagar = vm::apagar,
-                conferir = vm::conferir,
                 verMes = {
                     vm.filtro.value = FiltroRelatorio(ModoRelatorio.MES, hoje)
                     vm.aba.value = Aba.RELATORIOS
@@ -208,7 +207,6 @@ private fun Abas(vm: FretesViewModel, e: Estado, aba: Aba, hoje: java.time.Local
                 novo = novo,
                 editar = editar,
                 apagar = vm::apagar,
-                conferir = vm::conferir,
                 compartilhar = { texto ->
                     val envio = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, texto)
                     contexto.startActivity(Intent.createChooser(envio, "Mandar resumo"))

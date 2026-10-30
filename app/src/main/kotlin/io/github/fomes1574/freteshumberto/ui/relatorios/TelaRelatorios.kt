@@ -46,8 +46,6 @@ import io.github.fomes1574.freteshumberto.ui.comum.TextoApagado
 import io.github.fomes1574.freteshumberto.ui.comum.TituloCartao
 import io.github.fomes1574.freteshumberto.ui.comum.TituloTela
 import io.github.fomes1574.freteshumberto.ui.comum.Valor
-import io.github.fomes1574.freteshumberto.ui.estrada.CenaEstrada
-import io.github.fomes1574.freteshumberto.ui.estrada.rotuloMeta
 import io.github.fomes1574.freteshumberto.ui.hoje.ContaDoPeriodo
 import io.github.fomes1574.freteshumberto.ui.hoje.ListaLancamentos
 import io.github.fomes1574.freteshumberto.ui.hoje.numero
@@ -62,7 +60,6 @@ class AcoesRelatorio(
     val novo: (Tipo, LocalDate) -> Unit,
     val editar: (Lancamento) -> Unit,
     val apagar: (Lancamento) -> Unit,
-    val conferir: (LocalDate) -> Unit,
     val compartilhar: (String) -> Unit,
 )
 
@@ -117,14 +114,6 @@ fun TelaRelatorios(e: Estado, f: FiltroRelatorio, hoje: LocalDate, posicoes: Mut
             Valor(r.lucro, grande = true)
             Textos.comparacao(e.lancamentos, f, r, e.metas, hoje)?.let { TextoApagado(it) }
             if (f.modo == ModoRelatorio.DIA && r.qtdFretes > 0) Text(textoMeta(r.lucro, e.metas.doDia(p.inicio)), style = MaterialTheme.typography.titleMedium)
-            if (f.modo == ModoRelatorio.MES) {
-                val mes = YearMonth.from(p.inicio)
-                val meta = e.metas.doMes(mes)
-                if (meta > 0) {
-                    Text(textoMeta(r.lucro, meta), style = MaterialTheme.typography.titleMedium)
-                    CenaEstrada(r.lucro, meta, "mes:$mes", posicoes, rotuloMeta(meta, "Meta do mês"))
-                }
-            }
         }
 
         if (f.modo == ModoRelatorio.DOIS_DIAS && f.doisDias.size == 2) {
@@ -213,7 +202,6 @@ fun TelaRelatorios(e: Estado, f: FiltroRelatorio, hoje: LocalDate, posicoes: Mut
                         { m -> Botao("Outra despesa", { acoes.novo(Tipo.DESPESA, dia) }, m, R.drawable.ic_despesa, androidx.compose.ui.graphics.Color(0xFFE7E3D8), Cores.Tinta) },
                     )
                 }
-                if (lista.isNotEmpty()) BotaoLinha(Textos.conferencia(e.diario, dia), { acoes.conferir(dia) }, icone = R.drawable.ic_conferido)
             }
         }
 

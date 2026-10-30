@@ -1,7 +1,6 @@
 package io.github.fomes1574.freteshumberto.core
 
 import java.time.LocalDate
-import java.time.YearMonth
 
 enum class Tipo { FRETE, ABASTECIMENTO, DESPESA }
 
@@ -55,13 +54,11 @@ data class Lancamento(
 data class MetaDiaria(val desde: LocalDate, val valor: Long)
 
 /**
- * Metas (R06/R07 do protótipo). Mudar a meta não reescreve dias anteriores;
- * a meta mensal pertence ao mês escolhido.
+ * Meta de lucro por dia (R06). Só existe a meta diária. Mudar a meta vale para o dia em
+ * que mudou e para os seguintes; os dias que já passaram ficam com a meta que tinham.
  */
 data class Metas(
     val diarias: List<MetaDiaria> = listOf(MetaDiaria(LocalDate.of(1900, 1, 1), 25_000)),
-    val mensais: Map<YearMonth, Long> = emptyMap(),
-    val baseMensal: Long = 550_000,
 ) {
     private val ordenadas = diarias.sortedBy { it.desde }
 
@@ -71,13 +68,9 @@ data class Metas(
         return v
     }
 
-    fun doMes(m: YearMonth): Long = mensais[m] ?: baseMensal
-
-    /** Nova meta diária a partir de [desde]; substitui só uma meta com a mesma data de início. */
+    /** Nova meta a partir de [desde] (hoje); substitui só uma meta com a mesma data de início. */
     fun comMetaDiaria(desde: LocalDate, valor: Long): Metas =
         copy(diarias = (diarias.filter { it.desde != desde } + MetaDiaria(desde, valor)).sortedBy { it.desde })
-
-    fun comMetaMensal(m: YearMonth, valor: Long): Metas = copy(mensais = mensais + (m to valor))
 }
 
 /** Texto da meta, sem julgamento (R06): "Faltam R$ X", "Meta atingida", "Meta atingida · R$ X acima". */

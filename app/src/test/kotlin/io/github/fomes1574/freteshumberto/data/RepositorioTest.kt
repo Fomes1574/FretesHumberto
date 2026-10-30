@@ -90,12 +90,22 @@ class RepositorioTest {
         assertEquals(3, repo.carregar().lancamentos.size)
     }
 
-    @Test fun `conferencia fica desatualizada depois de editar`() = runBlocking {
-        val f = frete("2026-03-15", 8000)
-        repo.salvar(f); repo.conferir(f.data)
-        assertTrue(repo.carregar().diario.conferidoAtual(f.data))
-        repo.salvar(f.copy(valor = 9000))
-        assertEquals(false, repo.carregar().diario.conferidoAtual(f.data))
+    @Test fun `o dia vira a meia noite de Brasilia`() {
+        // 2026-03-16 02:59 UTC = 15/03 23:59 em Brasília; 03:00 UTC = 16/03 00:00.
+        val antes = Repositorio(banco, Clock.fixed(Instant.parse("2026-03-16T02:59:00Z"), ZoneOffset.UTC))
+        val depois = Repositorio(banco, Clock.fixed(Instant.parse("2026-03-16T03:00:00Z"), ZoneOffset.UTC))
+        assertEquals(d("2026-03-15"), antes.hoje())
+        assertEquals(d("2026-03-16"), depois.hoje())
+    }
+
+    @Test fun `meta mudada a noite vale para aquele dia e os seguintes e nao para os passados`() = runBlocking {
+        // relogio: 15/03 12:00 em Brasília.
+        repo.salvarAjustes(metaDia = 30000, kmPorLitro = 850, preco = 379)
+        repo.salvarAjustes(metaDia = 32000, kmPorLitro = 850, preco = 379)
+        val e = repo.carregar()
+        assertEquals(25000L, e.metas.doDia(d("2026-03-14")))
+        assertEquals(32000L, e.metas.doDia(d("2026-03-15")))
+        assertEquals(32000L, e.metas.doDia(d("2026-04-01")))
     }
 
     @Test fun `falha no meio da gravacao desfaz a transacao inteira`() = runBlocking {
@@ -134,12 +144,10 @@ class RepositorioTest {
     }
 
     @Test fun `ajustes guardam metas historicas`() = runBlocking {
-        repo.salvarAjustes(metaDia = 30000, mes = YearMonth.of(2026, 3), metaMes = 700000, kmPorLitro = 910, preco = 455)
+        repo.salvarAjustes(metaDia = 30000, kmPorLitro = 910, preco = 455)
         val e = repo.carregar()
         assertEquals(25000L, e.metas.doDia(d("2026-03-14")))
         assertEquals(30000L, e.metas.doDia(d("2026-03-15")))
-        assertEquals(700000L, e.metas.doMes(YearMonth.of(2026, 3)))
-        assertEquals(550000L, e.metas.doMes(YearMonth.of(2026, 4)))
         assertEquals(455L, e.precoReferencia())
         assertEquals(910L, e.ajustes.kmPorLitroCentesimos)
     }
@@ -147,7 +155,7 @@ class RepositorioTest {
     @Test fun `restaurar copia substitui tudo e volta igual`() = runBlocking {
         repo.salvar(frete("2026-03-10", 1000))
         repo.cadastrarConta("Aluguel", 30000, 31, d("2026-01-01"), null)
-        repo.salvarAjustes(30000, YearMonth.of(2026, 3), 700000, 910, 455)
+        repo.salvarAjustes(30000, 910, 455)
         val copia = Copia.paraJson(repo.carregar(), repo.agora())
         val original = Copia.abrir(copia, null)
 
@@ -174,6 +182,18 @@ class RepositorioTest {
         assertEquals(0, withTimeout(5_000) { repo.estado.first() }.lancamentos.size)
         repo.salvar(frete("2026-03-15", 1000))
         withTimeout(5_000) { repo.estado.first { it.lancamentos.size == 1 } }
+        Unit
+    }
+
+    @Test fun `estado observado acompanha meta ajustes e contas mesmo sem lancamento novo`() = runBlocking {
+        withTimeout(5_000) { repo.estado.first() }
+        repo.salvarAjustes(metaDia = 30000, kmPorLitro = 1000, preco = 500)
+        withTimeout(5_000) { repo.estado.first { it.metas.doDia(d("2026-03-15")) == 30000L && it.ajustes.kmPorLitroCentesimos == 1000L } }
+        // Conta que só vence depois: grava conta e versão, nenhum lançamento.
+        repo.cadastrarConta("Seguro", 20000, 20, d("2026-03-15"), null)
+        withTimeout(5_000) { repo.estado.first { it.contas.size == 1 && it.lancamentos.isEmpty() } }
+        repo.alternarPausa(repo.carregar().contas.single().id, YearMonth.of(2026, 3))
+        withTimeout(5_000) { repo.estado.first { e -> e.contas.single().versaoEm(YearMonth.of(2026, 3))?.ativa == false } }
         Unit
     }
 }

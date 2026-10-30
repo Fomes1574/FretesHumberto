@@ -11,7 +11,9 @@ import io.github.fomes1574.freteshumberto.core.Lancamento
 import io.github.fomes1574.freteshumberto.core.MetaDiaria
 import io.github.fomes1574.freteshumberto.core.Metas
 import io.github.fomes1574.freteshumberto.core.Mudancas
+import io.github.fomes1574.freteshumberto.core.Datas
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.map
 import java.time.Clock
@@ -31,15 +33,24 @@ import java.util.UUID
  */
 class Repositorio(
     private val banco: BancoFretes,
-    private val relogio: Clock = Clock.systemDefaultZone(),
+    /** Relógio do app; o dia é sempre o de Brasília (Datas.hoje). */
+    private val relogio: Clock = Clock.systemUTC(),
     private val geradorId: () -> String = { UUID.randomUUID().toString() },
 ) {
     private val dao = banco.dao()
 
-    /** Estado completo, relido a cada alteração em qualquer tabela. */
-    val estado: Flow<Estado> = dao.sinal().conflate().map { carregar() }
+    /**
+     * Estado completo, relido a cada alteração em qualquer tabela (lançamentos, contas,
+     * metas ou ajustes). O Room avisa mesmo quando a contagem não muda.
+     */
+    val estado: Flow<Estado> = combine(
+        listOf(dao.sinalLancamentos(), dao.sinalOcorrencias(), dao.sinalContas(), dao.sinalVersoes(), dao.sinalMetas(), dao.sinalAjustes()),
+    ) { it.sum() }.conflate().map { carregar() }
 
-    fun hoje(): LocalDate = LocalDate.now(relogio)
+    /** Hoje pelo horário de Brasília: vira às 00:00, mesmo com o celular em outro fuso. */
+    fun hoje(): LocalDate = Datas.hoje(relogio)
+
+    fun ateMeiaNoite(): java.time.Duration = Datas.ateMeiaNoite(relogio)
 
     fun agora(): String = Instant.now(relogio).toString()
 
@@ -71,19 +82,17 @@ class Repositorio(
 
     suspend fun desfazer(r: Diario.Removido) = alterar { it.copy(diario = it.diario.restaurar(r)) }
 
-    suspend fun conferir(d: LocalDate) = alterar { it.copy(diario = it.diario.conferir(d)) }
-
     // ---------------------------------------------------------------- ajustes e metas
 
     /**
-     * Meta diária vale de hoje em diante (R06); meta mensal só para o mês escolhido.
-     * O preço manual só vira referência nova se mudou: não reescreve abastecimentos.
+     * A meta nova vale para hoje e os próximos dias; os dias que já passaram ficam com a
+     * meta que tinham (R06). O preço manual só vira referência nova se mudou: não reescreve
+     * abastecimentos.
      */
-    suspend fun salvarAjustes(metaDia: Long, mes: YearMonth, metaMes: Long, kmPorLitro: Long, preco: Long) = alterar { e ->
+    suspend fun salvarAjustes(metaDia: Long, kmPorLitro: Long, preco: Long) = alterar { e ->
         val hoje = hoje()
         var metas = e.metas
         if (metas.doDia(hoje) != metaDia) metas = metas.comMetaDiaria(hoje, metaDia)
-        if (metas.doMes(mes) != metaMes) metas = metas.comMetaMensal(mes, metaMes)
         val precoManual = if (preco != e.precoReferencia()) Combustivel.ReferenciaManual(hoje, preco, agora()) else e.ajustes.precoManual
         e.copy(metas = metas, ajustes = Ajustes(kmPorLitro, precoManual))
     }
@@ -118,11 +127,9 @@ class Repositorio(
     suspend fun substituirTudo(novo: Estado) = banco.withTransaction {
         dao.apagarTodosLancamentos()
         dao.apagarTodasOcorrencias()
-        dao.apagarTodosDias()
         dao.apagarVersoes()
         dao.apagarContas()
         dao.apagarMetasDiarias()
-        dao.apagarMetasMensais()
         dao.apagarAjustes()
         gravar(ler(), novo)
     }
@@ -130,12 +137,9 @@ class Repositorio(
     // ---------------------------------------------------------------- leitura e gravação
 
     private suspend fun ler(): Estado {
-        val dias = dao.dias()
         val diario = Diario(
             lancamentos = dao.lancamentos().map { it.paraCore() },
             ocorrencias = dao.ocorrencias().map { it.paraCore() }.associateBy { it.chave },
-            revisoes = dias.filter { it.revisao > 0 }.associate { LocalDate.parse(it.data) to it.revisao },
-            conferidos = dias.filter { it.conferida != null }.associate { LocalDate.parse(it.data) to it.conferida!! },
         )
         val versoes = dao.versoes().groupBy { it.contaId }
         val contas = dao.contas().mapNotNull { c ->
@@ -145,11 +149,7 @@ class Repositorio(
         val padrao = Ajustes()
         val padraoMetas = Metas()
         val diarias = dao.metasDiarias().map { MetaDiaria(LocalDate.parse(it.desde), it.valor) }
-        val metas = Metas(
-            diarias = diarias.ifEmpty { padraoMetas.diarias },
-            mensais = dao.metasMensais().associate { YearMonth.parse(it.mes) to it.valor },
-            baseMensal = aj[META_BASE]?.toLongOrNull() ?: padraoMetas.baseMensal,
-        )
+        val metas = Metas(diarias = diarias.ifEmpty { padraoMetas.diarias })
         val ajustes = Ajustes(
             kmPorLitroCentesimos = aj[KM_POR_LITRO]?.toLongOrNull() ?: padrao.kmPorLitroCentesimos,
             precoManual = Combustivel.ReferenciaManual(
@@ -180,9 +180,6 @@ class Repositorio(
         if (occAtualizar.isNotEmpty()) dao.atualizarOcorrencias(occAtualizar.map(OcorrenciaEntidade::de))
         if (occInserir.isNotEmpty()) dao.inserirOcorrencias(occInserir.map(OcorrenciaEntidade::de))
 
-        m.diasApagar.map { it.toString() }.chunked(LOTE).forEach { dao.apagarDias(it) }
-        if (m.diasGravar.isNotEmpty()) dao.gravarDias(m.diasGravar.map { (d, r) -> DiaEntidade(d.toString(), r.revisao, r.conferida) })
-
         m.contas?.let { contas ->
             dao.apagarVersoes()
             dao.apagarContas()
@@ -192,10 +189,7 @@ class Repositorio(
         }
         m.metas?.let { metas ->
             dao.apagarMetasDiarias()
-            dao.apagarMetasMensais()
             dao.inserirMetasDiarias(metas.diarias.map { MetaDiariaEntidade(it.desde.toString(), it.valor) })
-            dao.inserirMetasMensais(metas.mensais.map { (mes, v) -> MetaMensalEntidade(mes.toString(), v) })
-            dao.gravarAjustes(listOf(AjusteEntidade(META_BASE, metas.baseMensal.toString())))
         }
         m.ajustes?.let { a ->
             dao.gravarAjustes(
@@ -215,6 +209,5 @@ class Repositorio(
         const val PRECO_DATA = "precoManualData"
         const val PRECO_VALOR = "precoManualValor"
         const val PRECO_CARIMBO = "precoManualCarimbo"
-        const val META_BASE = "metaMensalBase"
     }
 }

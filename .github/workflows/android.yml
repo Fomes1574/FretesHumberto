@@ -42,6 +42,14 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
+      # Mesma chave de depuração em todos os builds: sem ela, cada APK novo teria outra
+      # assinatura e o Android não deixaria instalar por cima (perderia os dados).
+      - name: Chave de depuração estável
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: chave-depuracao-meus-fretes-v1
+
       - name: Testes das regras (:core)
         run: ./gradlew :core:test --stacktrace
 
@@ -64,27 +72,28 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 7
 
-      # APK de teste com link direto (sem .zip), na página Releases, etiqueta fixa "teste".
+      # APK com link direto (sem .zip) na página Releases, etiqueta fixa "meus-fretes".
       # Cada execução manual ou push no main troca o arquivo; o link continua o mesmo:
-      # https://github.com/Fomes1574/FretesHumberto/releases/download/teste/MeusFretes-teste.apk
-      - name: Publicar APK de teste nos Releases
+      # https://github.com/Fomes1574/FretesHumberto/releases/download/meus-fretes/MeusFretes.apk
+      - name: Publicar APK nos Releases
         if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk MeusFretes-teste.apk
+          cp app/build/outputs/apk/debug/app-debug.apk MeusFretes.apk
           cat > notas.md <<NOTAS
-          **Versão de teste** do Meus Fretes, gerada automaticamente do commit \`${GITHUB_SHA::7}\` (branch \`${GITHUB_REF_NAME}\`).
+          Meus Fretes, gerado automaticamente do commit \`${GITHUB_SHA::7}\` em $(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M') (horário de Brasília).
 
-          Baixe o arquivo **MeusFretes-teste.apk** abaixo direto no celular (Android 8 ou mais novo) e toque nele para instalar. Se o Android pedir, permita "instalar apps desconhecidos". Se o Play Protect avisar, toque em "Instalar mesmo assim".
+          Baixe o arquivo **MeusFretes.apk** abaixo direto no celular (Android 8 ou mais novo) e toque nele para instalar. Se o Android pedir, permita "instalar apps desconhecidos". Se o Play Protect avisar, toque em "Instalar mesmo assim".
 
-          - Aparece no celular como **Meus Fretes (teste)** e fica separado da versão definitiva.
-          - Não é a versão assinada para uso real: ela não vai ser atualizada por cima da versão definitiva. Para levar dados de uma para outra, use Ajustes → Fazer cópia / Restaurar cópia.
-          - Não tem nenhum dado real.
+          - Para atualizar, baixe de novo pelo mesmo link e instale por cima: os dados continuam.
+          - Antes de atualizar, faça uma cópia em Ajustes → Fazer cópia, por segurança.
+          - Ainda não é a versão com a chave definitiva (docs/CHAVE_ASSINATURA.md).
           NOTAS
           gh release delete teste --yes --cleanup-tag || true
-          gh release create teste MeusFretes-teste.apk --prerelease --target "$GITHUB_SHA" \
-            --title "Meus Fretes — versão de teste" --notes-file notas.md
+          gh release delete meus-fretes --yes --cleanup-tag || true
+          gh release create meus-fretes MeusFretes.apk --latest --target "$GITHUB_SHA" \
+            --title "Meus Fretes" --notes-file notas.md
 
       - name: Guardar relatórios de teste
         if: failure()

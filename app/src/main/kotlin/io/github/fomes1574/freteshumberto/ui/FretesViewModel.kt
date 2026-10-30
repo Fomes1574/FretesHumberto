@@ -111,10 +111,12 @@ class FretesViewModel(private val fretes: FretesApplication) : ViewModel() {
     val posicoesVan = HashMap<String, Float>()
 
     init {
-        // Virada do dia com o app aberto: troca "hoje" e lança contas que venceram.
+        // Virada do dia às 00:00 de Brasília com o app aberto: troca "hoje" (dia novo, sem
+        // fretes nem despesas) e lança as contas que venceram. Confere no máximo a cada minuto,
+        // para acertar mesmo se o celular dormir ou o relógio mudar.
         viewModelScope.launch {
             while (true) {
-                delay(60_000)
+                delay(minOf(repo.ateMeiaNoite().toMillis() + 500, 60_000))
                 if (repo.hoje() != _hoje.value) aoVoltar()
             }
         }
@@ -183,10 +185,8 @@ class FretesViewModel(private val fretes: FretesApplication) : ViewModel() {
         }
     }
 
-    fun conferir(d: LocalDate) = gravar("Dia conferido.") { repo.conferir(d) }
-
-    fun salvarAjustes(metaDia: Long, mes: YearMonth, metaMes: Long, kmPorLitro: Long, preco: Long) =
-        gravar("Ajustes salvos.") { repo.salvarAjustes(metaDia, mes, metaMes, kmPorLitro, preco) }
+    fun salvarAjustes(metaDia: Long, kmPorLitro: Long, preco: Long) =
+        gravar("Ajustes salvos.") { repo.salvarAjustes(metaDia, kmPorLitro, preco) }
 
     fun mudarLetra(t: TamanhoLetra) {
         viewModelScope.launch { prefs.mudarLetra(t) }

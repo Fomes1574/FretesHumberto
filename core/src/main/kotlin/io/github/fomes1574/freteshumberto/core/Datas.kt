@@ -1,8 +1,12 @@
 package io.github.fomes1574.freteshumberto.core
 
+import java.time.Clock
 import java.time.DayOfWeek
+import java.time.Duration
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 
@@ -20,6 +24,20 @@ enum class ModoPeriodo { DIA, SEMANA, MES, PERSONALIZADO }
  * weekStart/validRange/previousRange do protótipo.
  */
 object Datas {
+    /**
+     * O dia vira às 00:00 pelo horário de Brasília, mesmo se o celular estiver em outro fuso.
+     * Depois da meia-noite, "hoje" é um dia novo, sem fretes nem despesas.
+     */
+    val FUSO: ZoneId = ZoneId.of("America/Sao_Paulo")
+
+    fun hoje(relogio: Clock): LocalDate = LocalDate.now(relogio.withZone(FUSO))
+
+    /** Tempo até a próxima meia-noite de Brasília. */
+    fun ateMeiaNoite(relogio: Clock): Duration {
+        val agora = ZonedDateTime.now(relogio.withZone(FUSO))
+        return Duration.between(agora, agora.toLocalDate().plusDays(1).atStartOfDay(FUSO))
+    }
+
     /** Semana de segunda a domingo. */
     fun inicioSemana(d: LocalDate): LocalDate = d.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
 

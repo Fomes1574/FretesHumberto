@@ -141,11 +141,13 @@ class RegrasTest {
         assertEquals(30000L, m.doDia(d("2026-10-30")))
     }
 
-    @Test fun `meta mensal so muda no mes escolhido`() {
-        val m = metas.comMetaMensal(YearMonth.of(2026, 10), 600000)
-        assertEquals(550000L, m.doMes(YearMonth.of(2026, 9)))
-        assertEquals(600000L, m.doMes(YearMonth.of(2026, 10)))
-        assertEquals(550000L, m.doMes(YearMonth.of(2026, 11)))
+    @Test fun `meta mudada a noite vale para aquele dia e os seguintes e nao para os passados`() {
+        // 23:30: muda a meta de R$ 250 para R$ 300 no mesmo dia em que fez os fretes.
+        val m = metas.comMetaDiaria(d("2026-10-30"), 30000).comMetaDiaria(d("2026-10-30"), 32000)
+        assertEquals(25000L, m.doDia(d("2026-10-29")))
+        assertEquals(32000L, m.doDia(d("2026-10-30")))
+        assertEquals(32000L, m.doDia(d("2026-11-15")))
+        assertEquals(2, m.diarias.size)
     }
 
     @Test fun `historico de meta nao muda ao alterar configuracao atual`() {
@@ -234,12 +236,15 @@ class RegrasTest {
         assertEquals(2000L, Relatorio.resumir(di.lancamentos, dia("2020-01-01"), metas).lucro)
     }
 
-    @Test fun `conferencia fica desatualizada apos editar um dia`() {
-        val f = frete("2026-10-29", 8000)
-        var di = Diario().salvar(f).conferir(f.data)
-        assertTrue(di.conferidoAtual(f.data))
-        di = di.salvar(f.copy(valor = 9000))
-        assertFalse(di.conferidoAtual(f.data))
+    @Test fun `o dia vira a meia noite de Brasilia`() {
+        // 23:59 em Brasília = 02:59 UTC do dia seguinte.
+        val antes = java.time.Clock.fixed(java.time.Instant.parse("2026-10-31T02:59:00Z"), java.time.ZoneOffset.UTC)
+        val depois = java.time.Clock.fixed(java.time.Instant.parse("2026-10-31T03:00:00Z"), java.time.ZoneOffset.UTC)
+        assertEquals(d("2026-10-30"), Datas.hoje(antes))
+        assertEquals(d("2026-10-31"), Datas.hoje(depois))
+        assertEquals(java.time.Duration.ofMinutes(1), Datas.ateMeiaNoite(antes))
+        // Celular em outro fuso continua seguindo Brasília.
+        assertEquals(d("2026-10-30"), Datas.hoje(antes.withZone(java.time.ZoneId.of("Europe/Lisbon"))))
     }
 
     // ---- Contas do mês

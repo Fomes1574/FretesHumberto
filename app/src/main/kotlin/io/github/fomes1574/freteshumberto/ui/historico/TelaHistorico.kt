@@ -97,7 +97,6 @@ private fun CartaoDia(dia: DiaHistorico, hoje: LocalDate, aoAbrir: (LocalDate) -
                         if (dia.metaAtingida == true) "Meta atingida" else if (dia.metaAtingida == false) "Abaixo da meta" else null,
                         Textos.fretes(dia.fretes),
                         if (dia.abasteceu) "abasteceu" else null,
-                        if (dia.conferido) "conferido" else null,
                     )
                     TextoApagado(partes.joinToString(" · "))
                 }

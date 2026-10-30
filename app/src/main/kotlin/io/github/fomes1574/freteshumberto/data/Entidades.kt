@@ -16,7 +16,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 
 /*
- * Esquema do banco, versão 1. Datas financeiras ficam como texto "AAAA-MM-DD" (sem hora e sem
+ * Esquema do banco, versão 2 (a 1 tinha meta mensal e conferência de dia). Datas financeiras ficam como texto "AAAA-MM-DD" (sem hora e sem
  * fuso) e meses como "AAAA-MM"; dinheiro em centavos (Long); litros e km em centésimos.
  *
  * Lançamento numa tabela só, com colunas opcionais por tipo: não existe coluna que ligue
@@ -121,14 +121,7 @@ data class OcorrenciaEntidade(
 @Entity(tableName = "meta_diaria")
 data class MetaDiariaEntidade(@PrimaryKey val desde: String, val valor: Long)
 
-@Entity(tableName = "meta_mensal")
-data class MetaMensalEntidade(@PrimaryKey val mes: String, val valor: Long)
-
-/** Revisão de cada dia e a revisão no momento da conferência (null = não conferido). */
-@Entity(tableName = "dia")
-data class DiaEntidade(@PrimaryKey val data: String, val revisao: Int, val conferida: Int?)
-
-/** Ajustes simples em pares chave/valor (consumo, preço manual, meta mensal base). */
+/** Ajustes simples em pares chave/valor (consumo e preço manual do litro). */
 @Entity(tableName = "ajuste")
 data class AjusteEntidade(@PrimaryKey val chave: String, val valor: String)
 

@@ -5,7 +5,9 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeTimeoutException
 import androidx.compose.ui.test.SemanticsNodeInteraction
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -18,6 +20,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
 import io.github.fomes1574.freteshumberto.FretesApplication
 import io.github.fomes1574.freteshumberto.MainActivity
+import io.github.fomes1574.freteshumberto.core.Datas
 import io.github.fomes1574.freteshumberto.core.Estado
 import io.github.fomes1574.freteshumberto.data.TamanhoLetra
 import kotlinx.coroutines.runBlocking
@@ -88,6 +91,14 @@ class FluxosTest {
     private fun campo(i: Int) = tela.onAllNodes(hasSetTextAction())[i]
 
     private fun tocar(texto: String) = tela.onNodeWithText(texto).performScrollTo().clicar()
+
+    private fun aba(nome: String) = tela.onAllNodesWithText(nome)[0].clicar()
+
+    /** Troca o valor de um campo (apaga o que tinha e digita o novo). */
+    private fun trocar(i: Int, texto: String) {
+        campo(i).performTextClearance()
+        campo(i).performTextInput(texto)
+    }
 
     /** Abre o formulário pelo botão da tela Hoje, digita o valor e salva. */
     private fun anotar(botao: String, valor: String) {
@@ -167,5 +178,109 @@ class FluxosTest {
         esperarSumir("Salvar conta mensal")
         esperar("Aluguel da vaga")
         esperar("Lançada", parte = true)
+    }
+
+    @Test fun `meta nova aparece na hora em todas as telas e continua depois de reabrir`() {
+        anotar("Anotar frete", "280")
+        esperar("Meta atingida · R$ 30,00 acima")
+        aba("Ajustes")
+        esperar("Salvar ajustes")
+        trocar(0, "300")
+        tocar("Salvar ajustes")
+        esperar("Ajustes salvos.")
+        aba("Hoje")
+        esperar("Meta R$ 300,00")
+        esperar("Faltam R$ 20,00 para a meta")
+        aba("Ajustes")
+        esperar("300,00")
+        aba("Relatórios")
+        tela.onNodeWithText("Dia").clicar()
+        esperar("Faltam R$ 20,00 para a meta")
+        aba("Hoje")
+        esperar("Meta R$ 300,00")
+        // Gravado no banco: ao fechar e abrir o app, continua R$ 300.
+        val app = ApplicationProvider.getApplicationContext<FretesApplication>()
+        val salvo = runBlocking { app.repositorio.carregar().metas.doDia(app.repositorio.hoje()) }
+        org.junit.Assert.assertEquals(30000L, salvo)
+    }
+
+    @Test fun `consumo e preco salvos chegam na calculadora`() {
+        aba("Ajustes")
+        esperar("Salvar ajustes")
+        trocar(1, "10")
+        trocar(2, "5")
+        tocar("Salvar ajustes")
+        esperar("Ajustes salvos.")
+        aba("Hoje")
+        tocar("Calcular um frete")
+        esperar("Limpar cálculo")
+        esperar("10,00")
+        esperar("5,00")
+        tocar("Fechar")
+    }
+
+    @Test fun `abastecimento por litros calcula o preco e vira a referencia`() {
+        esperar("Abasteci")
+        tocar("Abasteci")
+        esperar("Salvar")
+        campo(0).performTextInput("200")
+        tocar("quantos litros")
+        trocar(1, "54,05")
+        esperar("R$ 3,70")
+        tocar("Salvar")
+        esperarSumir("Salvar")
+        esperar("54,05 L · R$ 3,70/L")
+        esperar("− R$ 200,00")
+        aba("Ajustes")
+        esperar("3,70")
+    }
+
+    @Test fun `corrigir um lancamento troca o valor em todas as contas`() {
+        anotar("Anotar frete", "100")
+        esperar("R$ 100,00")
+        tela.onAllNodes(hasText("Frete") and hasClickAction())[0].clicar()
+        esperar("Corrigir lançamento")
+        trocar(0, "150")
+        tocar("Salvar")
+        esperarSumir("Corrigir lançamento")
+        esperar("R$ 150,00")
+        esperarSumir("R$ 100,00")
+    }
+
+    @Test fun `conta que ainda nao venceu aparece e pausar e pular mudam na hora`() {
+        val amanha = Datas.hoje(java.time.Clock.systemUTC()).plusDays(1)
+        aba("Histórico")
+        esperar("Contas do mês")
+        tocar("Contas do mês")
+        tocar("Cadastrar despesa mensal")
+        esperar("Salvar conta mensal")
+        campo(0).performTextInput("Seguro da Fiorino")
+        campo(1).performTextInput("120")
+        trocar(2, amanha.dayOfMonth.toString())
+        tocar("Salvar conta mensal")
+        esperarSumir("Salvar conta mensal")
+        esperar("Seguro da Fiorino")
+        esperar("Prevista", parte = true)
+        tocar("Pausar repetição")
+        esperar("Retomar repetição")
+        esperar("Repetição pausada", parte = true)
+        tocar("Retomar repetição")
+        esperar("Pausar repetição")
+        tocar("Pular este mês")
+        esperar("Retomar este mês")
+        esperar("Pulada neste mês", parte = true)
+    }
+
+    @Test fun `relatorio mostra o que foi anotado`() {
+        anotar("Anotar frete", "300")
+        anotar("Outra despesa", "50")
+        aba("Relatórios")
+        esperar("LUCRO DA SEMANA")
+        esperar("R$ 250,00")
+        esperar("R$ 300,00")
+        tela.onNodeWithText("Mês").clicar()
+        esperar("LUCRO DO MÊS")
+        esperar("R$ 250,00")
+        esperarSumir("Meta do mês")
     }
 }

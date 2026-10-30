@@ -46,7 +46,6 @@ class AppTest {
         val mud = Mudancas.entre(antes, depois)
         assertEquals(listOf(f.id), mud.lancamentosGravar.map { it.id })
         assertTrue(mud.lancamentosApagar.isEmpty())
-        assertEquals(setOf(d("2026-10-29")), mud.diasGravar.keys)
         assertNull(mud.contas); assertNull(mud.metas); assertNull(mud.ajustes)
         assertTrue(Mudancas.entre(depois, depois).vazia)
     }
@@ -200,23 +199,12 @@ class AppTest {
     }
 
     @Test fun `historico agrupa por mes e so dia com frete conta meta`() {
-        val di = Diario().salvar(frete("2026-10-29", 30000)).salvar(despesa("2026-10-28", 1000)).salvar(frete("2026-09-30", 10000)).conferir(d("2026-10-29"))
+        val di = Diario().salvar(frete("2026-10-29", 30000)).salvar(despesa("2026-10-28", 1000)).salvar(frete("2026-09-30", 10000))
         val h = Historico.meses(di, Metas())
         assertEquals(listOf(m("2026-10"), m("2026-09")), h.map { it.mes })
         assertEquals(29000L, h[0].lucro)
         assertEquals(listOf(true, null), h[0].dias.map { it.metaAtingida })
-        assertTrue(h[0].dias[0].conferido)
         assertEquals("Faltam R$ 150,00 para a meta", h[1].dias[0].textoMeta)
-    }
-
-    @Test fun `texto da conferencia`() {
-        val f = frete("2026-10-29", 1000)
-        var di = Diario().salvar(f)
-        assertEquals("Conferir dia", Textos.conferencia(di, f.data))
-        di = di.conferir(f.data)
-        assertEquals("Dia conferido", Textos.conferencia(di, f.data))
-        di = di.salvar(f.copy(valor = 2000))
-        assertEquals("Alterado após a conferência", Textos.conferencia(di, f.data))
     }
 
     @Test fun `lembrete semanal de copia`() {
@@ -233,10 +221,10 @@ class AppTest {
         e = ContasDoMes.alternarPulo(e, "aluguel", m("2026-02"), d("2026-03-15"), ::id)
         e = ContasDoMes.editarSoEsteMes(e, "aluguel", m("2026-03"), "Só março", 1000, 10, d("2026-03-15"), ::id)
         e = ContasDoMes.editarDesteMesEmDiante(e, "aluguel", m("2026-04"), "Aluguel novo", 35000, 31, d("2026-12-31"), d("2026-03-15"), ::id)
-        val di = e.diario.salvar(frete("2026-03-14", 12345, min = 17)).salvar(abast("2026-03-14", 20000)).salvar(despesa("2020-01-01", 500)).conferir(d("2026-03-14"))
+        val di = e.diario.salvar(frete("2026-03-14", 12345, min = 17)).salvar(abast("2026-03-14", 20000)).salvar(despesa("2020-01-01", 500))
         return e.copy(
             diario = di,
-            metas = Metas().comMetaDiaria(d("2026-03-01"), 30000).comMetaMensal(m("2026-03"), 700000),
+            metas = Metas().comMetaDiaria(d("2026-03-01"), 30000),
             ajustes = Ajustes(910, Combustivel.ReferenciaManual(d("2026-03-01"), 455, "2026-03-01T10:00:00Z")),
         )
     }
@@ -269,7 +257,7 @@ class AppTest {
     }
 
     @Test fun `copia de versao futura e recusada`() {
-        val futura = Copia.paraJson(Estado(), "x").replace("\"versao\":1", "\"versao\":99")
+        val futura = Copia.paraJson(Estado(), "x").replace("\"versao\":2", "\"versao\":99")
         assertRecusa("Esta cópia foi feita por uma versão mais nova do app. Atualize o app antes de restaurar.") { Copia.abrir(futura, null) }
     }
 
@@ -287,6 +275,13 @@ class AppTest {
         // ocorrência apontando para despesa que não existe
         val semDespesa = Estado(Diario(ocorrencias = mapOf("x|2026-01" to Ocorrencia("x", m("2026-01"), StatusOcorrencia.GERADA, "nao-existe"))))
         assertRecusa("Ocorrência de uma conta que não existe.") { Copia.abrir(Copia.paraJson(semDespesa, "x"), null) }
+    }
+
+    @Test fun `copia da versao 1 com meta mensal e conferencia ainda abre`() {
+        val e = estadoCompleto()
+        val v1 = Copia.paraJson(e, "x").replace("\"versao\":2", "\"versao\":1")
+            .replace("\"contas\":[", "\"metasMensais\":{\"2026-03\":700000},\"metaMensalBase\":550000,\"revisoes\":{\"2026-03-14\":3},\"conferidos\":{\"2026-03-14\":3},\"contas\":[")
+        assertEquals(e, Copia.abrir(v1, null))
     }
 
     @Test fun `cada copia com senha usa sal novo`() {
