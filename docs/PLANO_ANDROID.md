@@ -1,6 +1,6 @@
 # Plano de implementação Android
 
-**Em andamento desde 30/10/2026.** Etapa 1 quase pronta: falta só abrir o APK num aparelho (ver abaixo); etapas 2 a 6 por fazer. Os requisitos do produto já estão definidos em [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md). Esta sequência organiza a construção sem ampliar o escopo ou pressupor APK existente.
+**Em andamento desde 30/10/2026.** O código das etapas 1 a 5 está pronto e testado na JVM (GitHub Actions). Falta tudo o que depende de um celular: abrir o APK, conferir telas e cópia no aparelho, assinar e fazer o piloto (etapa 6). Os requisitos do produto já estão definidos em [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md). Esta sequência organiza a construção sem ampliar o escopo ou pressupor APK existente.
 
 ## Direção
 
@@ -51,7 +51,7 @@ Data financeira é `LocalDate`/conversor equivalente, não timestamp UTC à meia
 - [x] Projeto Gradle com `:core` (Kotlin/JVM) e `:app` (Android/Compose), catálogo de versões e wrapper do Gradle 9.3.0.
 - [x] SDK mínimo 26, target/compile 36, `applicationId` `io.github.fomes1574.freteshumberto` (DECISOES.md).
 - [x] Regras portadas para Kotlin em `core/`: dinheiro, datas, resumo do período, metas, calculadora, combustível, preço de referência, contas do mês, diário (salvar/apagar/desfazer/conferir) e regras da estrada.
-- [x] 39 testes JUnit em `core/src/test` com os mesmos casos do protótipo, **todos passando** (compilados com Kotlin 2.0.21 fora do Gradle; rodar de novo com `./gradlew :core:test`).
+- [x] 39 testes JUnit em `core/src/test` com os mesmos casos do protótipo, **todos passando** no Gradle (`./gradlew :core:test`).
 - [x] Esqueleto do app: quatro abas com ícone e texto, tema bege/verde, Atkinson Hyperlegible em `res/font`, ícone adaptativo com a Fiorino, backup do Google configurado.
 - [x] Workflow do GitHub Actions: testes + APK debug a cada push; APK release assinado quando houver Secrets.
 
@@ -65,49 +65,54 @@ Data financeira é `LocalDate`/conversor equivalente, não timestamp UTC à meia
 
 ### 2. Banco e operações
 
-- Criar entidades, DAOs, índices e esquema exportado do Room.
-- Implementar salvar/editar/excluir/desfazer e revisão dos dias, com transações.
-- Cobrir mover frete entre datas sem mexer nos gastos e falha de gravação sem falso sucesso.
-- Preservar IDs e definir migrações. Não usar fallback destrutivo para resolver divergência.
+- [x] Entidades, DAO, índices e esquema exportado do Room (versão 1 em `app/schemas/`, conferido pelo CI). Lançamento numa tabela só, com colunas opcionais por tipo e **nenhuma coluna que ligue gasto a frete**.
+- [x] Salvar/editar/excluir/desfazer e revisão dos dias: `data/Repositorio.kt` lê o estado, aplica a regra do `:core` e grava só a diferença (`core/Estado.kt`, `Mudancas`), tudo numa transação.
+- [x] Mover frete sem mexer nos gastos e falha de gravação sem falso sucesso: testes `RepositorioTest` (Robolectric) e `FluxosTest`; a tela só mostra "Salvo" depois da gravação.
+- [x] IDs preservados; sem `fallbackToDestructiveMigration`. Lista `MIGRACOES` pronta para a versão 2.
+- [ ] Primeira migração real (quando o esquema mudar): escrever `Migration(1, 2)` e teste com `MigrationTestHelper`.
 
-**Saída:** operações e migrações testadas; totais derivados de uma única base.
+**Saída:** operações testadas na JVM com Room em memória; totais sempre derivados do banco.
 
 ### 3. Telas e acessibilidade
 
-- Reproduzir Hoje, Histórico, Relatórios e Ajustes conforme o protótipo vigente.
-- Formulários simples; somente detalhes adicionais sob expansão. Teclado decimal, data clara, foco e retorno corretos.
-- Relatórios equivalentes, seleção de dois dias, valores textuais e gráficos com metas históricas.
-- Cena Fiorino em Canvas, com redução de movimento e sem redesenho contínuo em repouso.
-- Testar letra ampliada, Android font scale, TalkBack, teclado aberto e telas pequenas.
+- [x] Hoje, Histórico, Relatórios e Ajustes seguindo o protótipo vigente (`ui/`), mais Contas do mês, formulários e calculadora como telas por cima das abas.
+- [x] Formulários simples, "Mais detalhes" para km e duração, teclado decimal, atalhos Hoje/Ontem e calendário sem datas futuras, proteção contra toque duplo.
+- [x] Relatórios de dia, semana, mês, período (até 6 meses) e dois dias, com comparação equivalente, gráfico por dia com meta, valores em texto, combustível e 6 meses.
+- [x] Cena da Fiorino em Canvas (`ui/estrada/CenaEstrada.kt`) com as regras de `core/Estrada.kt`, confete, borrão das rodas e sem animação com "Remover animações" ligado.
+- [x] Letra A/A+/A++ por cima da fonte do Android; ícones sempre com texto; descrições para leitor de tela nos botões de ícone, gráficos e cena.
+- [x] Fluxos principais testados na JVM (`FluxosTest`, Robolectric + Compose).
+- [ ] Conferir no aparelho: letra A++ com fonte grande do Android, TalkBack, teclado aberto, tela pequena, cortes de texto.
 
-**Saída:** conferir registros, valores, ações e navegação sem corte no aparelho.
+**Saída:** conferir registros, valores, ações e navegação sem corte **no aparelho** (pendente).
 
 ### 4. Contas do mês
 
-- Aplicar versões e exceções em transação, com índice único conta+mês.
-- Worker e abertura usam a mesma geração idempotente, sem exigir horário exato.
-- Processar atrasos após dias sem abrir; respeitar mês pulado, pausa e data final.
-- Testar concorrência entre Worker/abertura, dia 31 e fevereiro bissexto com regra de dia 28.
+- [x] Versões e exceções aplicadas em transação (`core/Contas.kt` + repositório); chave conta+mês na tabela `ocorrencia` e índice único em `lancamento.ocorrencia`.
+- [x] `contas/ContasWorker.kt` (WorkManager, a cada 12 h, sem horário exato) e a abertura/volta ao app chamam a mesma `Repositorio.gerarContas`.
+- [x] Atrasos após dias sem abrir, mês pulado, pausa, retomar só um mês e data final: testes em `AppTest` e `RepositorioTest`.
+- [x] Oito gerações simultâneas não duplicam (`RepositorioTest`); dia 31 e fevereiro bissexto no dia 28 (`RegrasTest`).
+- [ ] Ver no aparelho a conta lançada com o app fechado (Worker rodando de verdade).
 
 **Saída:** execução repetida/concorrente não duplica; histórico anterior permanece.
 
 ### 5. Cópia e restauração
 
-- Definir DTO versionado e validação completa. **Não é preciso importar cópias do protótipo** (decisão de 30/10/2026: o motorista não usa o protótipo com dados reais).
-- Usar seletor de arquivo Android; confirmar stream gravado antes de atualizar data da cópia.
-- Restaurar com validação e substituição transacional; se falhar, preservar banco anterior.
-- Testar senha incorreta, adulteração, formato futuro, arquivo truncado, cancelamento, pouco espaço e restauração de todas as versões/exceções.
-- Configurar política explícita de backup/transferência do sistema Android; banco local não garante que o sistema não faça cópia em nuvem.
+- [x] Formato `.fretes` versionado (`core/Copia.kt`, versão 1) com validação completa. Não importa cópias do protótipo (decisão de 30/10/2026).
+- [x] Seletor de arquivos do Android (`backup/ArquivosCopia.kt`); a gravação é conferida lendo o arquivo de volta antes de registrar "Última cópia".
+- [x] Restauração validada antes de trocar os dados, numa transação; antes de trocar, o app guarda os dados atuais numa cópia interna para "Voltar aos dados de antes da restauração".
+- [x] Testes de senha incorreta, adulteração, versão futura, arquivo cortado, IDs repetidos, ocorrência incoerente e restauração de versões/exceções (`AppTest`, `RepositorioTest`).
+- [x] Política de backup do Android explícita no manifesto e em `res/xml` (backup do Google ligado, decisão de 30/10/2026).
+- [ ] No aparelho: salvar no Drive/pasta/WhatsApp, localizar o arquivo e restaurar com e sem senha; cancelar o seletor; pouco espaço.
 
-**Saída:** salvar, localizar e restaurar arquivo no aparelho, com e sem senha; não basta teste criptográfico de memória.
+**Saída:** salvar, localizar e restaurar arquivo no aparelho, com e sem senha (pendente no aparelho).
 
 ### 6. Instalação e piloto
 
-- Produzir APK assinado com chave estável fora do repositório.
-- Testar instalação e atualização por cima com preservação dos dados e restauração em instalação limpa.
-- Testar uso offline, retorno após fechar processo, virada de dia/semana/mês e desempenho com histórico maior.
-- Fazer piloto com o motorista. Ajustar dificuldades observadas sem inventar métricas ou tempo de uso.
-- Documentar aparelho, versão, commit, testes reais e pendências antes de marcar versão pronta.
+- [ ] Criar a chave de assinatura e os Secrets ([CHAVE_ASSINATURA.md](CHAVE_ASSINATURA.md)); gerar o APK assinado pela tag `v0.1.0`.
+- [ ] Instalar, atualizar por cima mantendo os dados e restaurar em instalação limpa.
+- [ ] Uso offline, fechar o processo e voltar, virada de dia/semana/mês e histórico grande.
+- [ ] Piloto com o motorista. Ajustar dificuldades observadas sem inventar métricas ou tempo de uso.
+- [ ] Documentar aparelho, versão, commit, testes reais e pendências antes de marcar versão pronta.
 
 **Saída:** aceite do uso no aparelho; só então tratar como primeira versão Android.
 

@@ -62,14 +62,14 @@ A fixture fictícia de restauração está em `tests/fixtures/restauracao-teste.
 
 ## Pendências obrigatórias no Android
 
-- [ ] Portar os casos de referência e validar dinheiro sem ponto flutuante/overflow.
-- [ ] Testar transações, falhas de disco e migrações sem perda de dados.
-- [ ] Testar edição/deleção independente e desfazer com estado atualizado.
-- [ ] Worker e abertura simultâneos sem despesa duplicada; meses pulados persistem.
+- [x] Portar os casos de referência e validar dinheiro sem ponto flutuante/overflow (`RegrasTest`).
+- [x] Testar transações e falha no meio da gravação sem perda de dados (`RepositorioTest`). Falta: disco cheio de verdade e a primeira migração, quando houver versão 2.
+- [x] Testar edição/deleção independente e desfazer com estado atualizado (`RepositorioTest`, `FluxosTest`).
+- [x] Gerações simultâneas sem despesa duplicada; meses pulados persistem (`RepositorioTest`). Falta: Worker rodando no aparelho.
 - [ ] Executar viradas de dia/semana/mês e troca de fuso com relógio controlado.
 - [ ] Testar filtros em meses de duração diferente, dias 29–31 e dados de anos anteriores.
 - [ ] Testar exportar, localizar e restaurar o arquivo físico com/sem senha; cancelamento, senha incorreta e arquivo inválido.
-- [ ] Conferir restauração de metas, versões de recorrência, exceções e conferências, não só fretes.
+- [x] Conferir restauração de metas, versões de recorrência, exceções e conferências, não só fretes (`AppTest`, `RepositorioTest`, na JVM).
 - [ ] Atualizar APK por cima com a mesma assinatura, mantendo dados.
 - [ ] Modo avião, processo encerrado, aparelho reiniciado e período sem abrir o app.
 - [ ] Letra A++, escala Android, TalkBack, teclado aberto e área de toque.
@@ -80,6 +80,19 @@ A fixture fictícia de restauração está em `tests/fixtures/restauracao-teste.
 ## Como registrar próximos resultados
 
 Informar data, commit, comando ou fluxo, esperado, observado, aparelho/ambiente e limitações. Distinguir falha do produto de limitação de teste. Não afirmar salvamento de arquivo só porque foi gerado um Blob, nem funcionamento nativo porque o teste Node passou.
+
+## Testes do app Android (30/10/2026, tarde)
+
+Rodam no GitHub Actions com `./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug`. Neste ambiente de desenvolvimento o SDK Android não baixa (sem acesso ao `dl.google.com`); o `:core` foi rodado aqui também.
+
+| Suíte | Onde | O que confere |
+|---|---|---|
+| `core/.../RegrasTest.kt` (39) | JVM | Casos de referência do protótipo |
+| `core/.../AppTest.kt` (27) | JVM | Campo de valor colado, diferença gravada no banco, contas do mês (só este mês, deste mês em diante, pular, pausar, retomar um mês), filtro e textos dos relatórios, comparação, dois dias, resumo do WhatsApp, histórico, conferência, lembrete de cópia, cópia com e sem senha, senha errada, adulteração, arquivo cortado, versão futura, dados incoerentes |
+| `app/.../data/RepositorioTest.kt` | Robolectric + Room em memória | Salvar e reler igual, toque duplo sem duplicar, apagar/mover frete sem mexer nos gastos, desfazer uma vez, conferência desatualizada, falha no meio desfaz tudo, 8 gerações de contas simultâneas sem duplicar, mês pulado, metas históricas, restaurar e falha na restauração mantendo os dados |
+| `app/.../ui/FluxosTest.kt` | Robolectric + Compose | Abre a `MainActivity`: R$ 285 − 40 − 20 = R$ 225 com "Faltam R$ 25,00"; apagar frete mantém a despesa e Desfazer; "R$ 1.234,56" colado; calculadora sem gravar; abas e A++; conta do mês lançada |
+
+Robolectric roda o Android na JVM (SDK 35). Ele não prova: toque real, teclado, TalkBack, desempenho, seletor de arquivos de verdade, WorkManager com o app fechado, instalação ou atualização do APK.
 
 ## Testes Kotlin do módulo `:core` (30/10/2026)
 

@@ -10,7 +10,8 @@ App Android offline para um motorista de Fiorino de 52 anos anotar fretes, abast
 
 ## Onde estamos
 
-- **Etapa 1 do [PLANO_ANDROID.md](docs/PLANO_ANDROID.md) quase pronta.** O módulo `:core` tem todas as regras em Kotlin com 39 testes passando. O `:app` é um esqueleto Compose com as quatro abas; **compila e gera APK debug no GitHub Actions** (primeiro build verde em 30/10/2026). Falta abri-lo num aparelho.
+- **Etapas 1 a 5 do [PLANO_ANDROID.md](docs/PLANO_ANDROID.md) com código pronto e testado na JVM** (30/10/2026): banco Room, telas, contas do mês com WorkManager, cópia de segurança. CI verde gera o APK debug.
+- **Nada foi conferido num celular ainda.** As caixas `[ ]` que sobram são, quase todas, testes no aparelho e a etapa 6 (chave de assinatura, instalação, piloto).
 - A próxima tarefa é sempre a primeira caixa `[ ]` do PLANO_ANDROID.md.
 - Decisões técnicas fechadas: [docs/DECISOES.md](docs/DECISOES.md) → "Decisões técnicas fechadas em 30/10/2026". Não reabrir.
 
@@ -39,8 +40,11 @@ Sem rede, ainda dá para trabalhar no `:core` (Kotlin puro) e no protótipo. Nã
 | Preciso de… | Vá em |
 |---|---|
 | Regra de negócio (contrato) | `docs/REGRAS_DE_NEGOCIO.md` |
-| Como a regra já está codificada | `core/src/main/kotlin/.../core/` (Dinheiro, Datas, Modelo, Calculos, Recorrencias, Diario, Estrada) |
-| Casos de teste de referência | `core/src/test/.../RegrasTest.kt` e `tests/regras.test.cjs` |
+| Como a regra já está codificada | `core/src/main/kotlin/.../core/` (Dinheiro, Datas, Modelo, Calculos, Recorrencias, Diario, Contas, Estado, Copia, Textos, Estrada) |
+| Banco e gravação | `app/.../data/` (`Repositorio` faz cada operação numa transação) |
+| Telas | `app/.../ui/` (uma pasta por tela; `FretesApp` liga tudo; `FretesViewModel`) |
+| Casos de teste de referência | `core/src/test/.../RegrasTest.kt`, `AppTest.kt` e `tests/regras.test.cjs` |
+| Testes do app (Robolectric) | `app/src/test/.../data/RepositorioTest.kt` e `ui/FluxosTest.kt` |
 | Visual (cores, tamanhos, telas) | `docs/ARQUITETURA.md` §3–5 + `docs/prototipo.html` + `docs/img/` |
 | Tema Compose pronto | `app/.../ui/theme/Tema.kt` (cores, Atkinson Hyperlegible, tipografia) |
 | Versões das bibliotecas | `gradle/libs.versions.toml` |
@@ -52,7 +56,8 @@ Sem rede, ainda dá para trabalhar no `:core` (Kotlin puro) e no protótipo. Nã
 - Pacote base `io.github.fomes1574.freteshumberto`. Regras em `.core`, nunca dentro de Composable ou ViewModel.
 - Dinheiro em `Long` (centavos), litros e km em centésimos (`Long`), duração em minutos (`Int`), datas financeiras em `LocalDate`. Nada de `Double` para dinheiro.
 - Cada operação do `Diario` (salvar, apagar, restaurar, conferir, gerar contas) = **uma transação Room**.
-- Sem `fallbackToDestructiveMigration`. Esquema exportado em `app/schemas/` e versionado.
+- Sem `fallbackToDestructiveMigration`. Esquema exportado em `app/schemas/` e versionado; o CI falha se o esquema gerado não estiver no Git (o log mostra o arquivo para copiar).
+- Mudou uma tabela? Suba `version` em `BancoFretes`, acrescente a `Migration` em `MIGRACOES` e um teste.
 - Textos da interface em português simples, curtos, sem julgamento ("compensa", "ruim"). Ícone sempre com texto.
 - Tamanhos em `sp` (respeitam a fonte do Android). Áreas de toque ≥ 48 dp; ações principais 56–68 dp.
 - Valor final do lucro aparece na hora; só a van anima. Regras da cena em `core/Estrada.kt`.

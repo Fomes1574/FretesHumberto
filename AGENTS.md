@@ -2,7 +2,7 @@
 
 ## Situação e leitura
 
-Protótipo HTML funcional e Android em construção (desde 30/10/2026): módulo `:core` com as regras em Kotlin e testes, esqueleto `:app` em Compose, wrapper do Gradle e workflow de CI. Ainda não há telas completas, banco Room ou APK publicado. Não descreva decisões planejadas como funções entregues.
+Protótipo HTML funcional e app Android em construção (desde 30/10/2026): módulos `:core` e `:app` com banco Room, telas, contas do mês e cópia de segurança, testados na JVM pelo GitHub Actions, que gera o APK debug. O app ainda não foi aberto num celular nem assinado, e não há APK publicado. Não descreva como pronto o que não foi testado no aparelho.
 
 Leia: `CLAUDE.md` (atalhos), `README.md`, `docs/REGRAS_DE_NEGOCIO.md`, `docs/ESTADO_ATUAL.md`, `docs/ARQUITETURA.md`, `docs/PLANO_ANDROID.md` e `docs/TESTES.md`. `docs/CONTEXTO_COMPLETO.md` reúne esses documentos automaticamente; não é uma segunda especificação para editar à mão.
 

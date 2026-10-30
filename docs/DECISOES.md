@@ -43,6 +43,20 @@ Tomadas pelo usuário para iniciar o Android. Não reabrir sem pedido dele.
 | Build do APK | GitHub Actions (repositório público) + Android Studio local | Workflow em `.github/workflows/android.yml`. APK de release assinado só com Secrets configurados |
 | Assinatura | Uma chave para sempre, fora do Git, em duas cópias | Passo a passo em [CHAVE_ASSINATURA.md](CHAVE_ASSINATURA.md) |
 
+## Escolhas de implementação (30/10/2026, tarde)
+
+Feitas ao construir as etapas 2 a 5. Podem mudar com migração, sem reabrir as regras.
+
+| Tema | Escolha | Motivo |
+|---|---|---|
+| Tabela de lançamentos | Uma tabela `lancamento` com colunas opcionais por tipo | Mais simples que tabelas de detalhe e não cria coluna que ligue gasto a frete |
+| Gravação | Repositório lê o estado, aplica a regra do `:core` e grava só a diferença, numa transação | As regras ficam num lugar só e testáveis; falha desfaz tudo |
+| Duplicidade de contas | Chave conta+mês em `ocorrencia` e índice único em `lancamento.ocorrencia`; inserir nunca "atualiza por cima" | O banco recusa duplicar mesmo se o agendador e a abertura rodarem juntos |
+| Formato da cópia Android | JSON `meus-fretes` versão 1, montado e validado à mão (`core/Copia.kt`) | Não lê cópias do protótipo (decisão de 30/10/2026); parâmetros de senha iguais aos do protótipo |
+| Restaurar | Antes de trocar, guarda os dados atuais numa cópia interna sem senha; Ajustes oferece "Voltar aos dados de antes da restauração" | Substitui a cópia preventiva baixada do protótipo |
+| Formulários | Telas inteiras por cima das abas, em vez de folhas deslizantes | Mais estáveis com teclado aberto e letra grande |
+| Testes do app | Robolectric (SDK 35) na JVM, no GitHub Actions | Sem emulador no CI; não substitui o teste no celular |
+
 ## O que continua sendo escolha técnica de implementação
 
 Esquema Room final e migrações, formato da cópia Android (DTO versionado) e detalhes de UI dentro da direção visual existente. Essas escolhas não justificam reabrir regras já decididas.

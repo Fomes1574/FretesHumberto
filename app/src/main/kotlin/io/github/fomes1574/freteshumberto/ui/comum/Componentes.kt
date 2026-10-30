@@ -252,8 +252,12 @@ fun CampoNumero(
             onValueChange = { novo -> aoMudar(if (inteiro) novo.filter { it.isDigit() }.take(6) else io.github.fomes1574.freteshumberto.core.Dinheiro.campo(novo)) },
             modifier = Modifier.fillMaxWidth(),
             textStyle = if (grande) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.bodyLarge,
-            prefix = prefixo?.let { { Text("$it ", style = MaterialTheme.typography.titleMedium, color = Cores.Apagado) } },
-            placeholder = dica?.let { { Text(it, color = Cores.Apagado) } },
+            prefix = if (prefixo != null) {
+                { Text("$prefixo ", style = MaterialTheme.typography.titleMedium, color = Cores.Apagado) }
+            } else null,
+            placeholder = if (dica != null) {
+                { Text(dica, color = Cores.Apagado) }
+            } else null,
             singleLine = true,
             keyboardOptions = KeyboardOptions(
                 keyboardType = if (inteiro) KeyboardType.Number else KeyboardType.Decimal,
