@@ -89,10 +89,10 @@ Rodam no GitHub Actions com `./gradlew :core:test :app:testDebugUnitTest :app:as
 |---|---|---|
 | `core/.../RegrasTest.kt` (39) | JVM | Casos de referência do protótipo |
 | `core/.../AppTest.kt` (27) | JVM | Campo de valor colado, diferença gravada no banco, contas do mês (só este mês, deste mês em diante, pular, pausar, retomar um mês), filtro e textos dos relatórios, comparação, dois dias, resumo do WhatsApp, histórico, conferência, lembrete de cópia, cópia com e sem senha, senha errada, adulteração, arquivo cortado, versão futura, dados incoerentes |
-| `app/.../data/RepositorioTest.kt` (11) | Robolectric + Room em memória | Salvar e reler igual, toque duplo sem duplicar, apagar/mover frete sem mexer nos gastos, desfazer uma vez, conferência desatualizada, falha no meio desfaz tudo, 8 gerações de contas simultâneas sem duplicar, mês pulado, metas históricas, restaurar e falha na restauração mantendo os dados |
-| `app/.../ui/FluxosTest.kt` (6) | Robolectric + Compose | Abre a `MainActivity`: R$ 285 − 40 − 20 = R$ 225 com "Faltam R$ 25,00"; apagar frete mantém a despesa e Desfazer; "R$ 1.234,56" colado; calculadora sem gravar; abas e A++; conta do mês lançada |
+| `app/.../data/RepositorioTest.kt` (12) e `MigracaoTest.kt` (1) | Robolectric + Room em memória | Salvar e reler igual, toque duplo sem duplicar, apagar/mover frete sem mexer nos gastos, desfazer uma vez, conferência desatualizada, falha no meio desfaz tudo, 8 gerações de contas simultâneas sem duplicar, mês pulado, metas históricas, restaurar e falha na restauração mantendo os dados |
+| `app/.../ui/FluxosTest.kt` (12) | Robolectric + Compose | Abre a `MainActivity`: meta R$ 300 aparece na hora em Hoje, Ajustes e Relatórios e fica gravada; consumo e preço chegam à calculadora; abastecimento por litros; corrigir lançamento; conta que ainda não venceu com pausar/pular; relatórios com os valores; R$ 285 − 40 − 20 = R$ 225 com "Faltam R$ 25,00"; apagar frete mantém a despesa e Desfazer; "R$ 1.234,56" colado; calculadora sem gravar; abas e A++; conta do mês lançada |
 
-**Resultado:** verde no GitHub Actions em 30/10/2026 (run 9, commit `ac077d3`): 66 testes do `:core`, 17 do `:app`, esquema do banco conferido e APK debug gerado (artefato `meus-fretes-debug`).
+**Resultado:** verde no GitHub Actions em 30/10/2026 à noite (run 24 no `main`, commit `3cbd8f4`): 66 testes do `:core`; no `:app`, 12 do repositório, 1 de migração do banco e 12 de tela; esquema do banco versão 2 conferido; APK publicado em Releases → "Meus Fretes".
 
 Robolectric roda o Android na JVM (SDK 35, tela de 411×891 dp). Ele não prova: toque real, teclado, TalkBack, desempenho, seletor de arquivos de verdade, WorkManager com o app fechado, instalação ou atualização do APK.
 

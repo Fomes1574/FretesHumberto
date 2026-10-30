@@ -58,7 +58,7 @@ JDK 17 e Android Studio (ou só o SDK). Na raiz:
 ./gradlew :app:assembleDebug    # APK debug em app/build/outputs/apk/debug/
 ```
 
-**APK de teste com link direto:** [MeusFretes-teste.apk](https://github.com/Fomes1574/FretesHumberto/releases/download/teste/MeusFretes-teste.apk) (página [Releases → teste](https://github.com/Fomes1574/FretesHumberto/releases/tag/teste)). Aparece no celular como "Meus Fretes (teste)". É republicado a cada execução manual do workflow e a cada push no `main`; o link não muda.
+**Baixar o app (link direto):** [MeusFretes.apk](https://github.com/Fomes1574/FretesHumberto/releases/download/meus-fretes/MeusFretes.apk) (página [Releases → Meus Fretes](https://github.com/Fomes1574/FretesHumberto/releases/tag/meus-fretes)). É republicado a cada atualização do `main`, com a mesma chave, para instalar por cima sem perder os dados; o link não muda.
 
 O GitHub Actions roda os testes e gera o APK debug a cada push (aba **Actions** → artefato `meus-fretes-debug`). O APK para o celular do motorista sai assinado na página **Releases** quando uma tag `v*` é enviada — veja [CHAVE_ASSINATURA.md](docs/CHAVE_ASSINATURA.md).
 
