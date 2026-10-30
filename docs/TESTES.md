@@ -83,7 +83,7 @@ Informar data, commit, comando ou fluxo, esperado, observado, aparelho/ambiente 
 
 ## Testes Kotlin do módulo `:core` (30/10/2026)
 
-`core/src/test/kotlin/.../RegrasTest.kt` repete os casos do protótipo em Kotlin e acrescenta casos de formatação, preço médio, dia só com gastos, alteração "só deste mês" e regras da estrada: **39 testes, todos passando**. Foram compilados e executados com o compilador Kotlin 2.0.21 embutido no Gradle, fora do Gradle (o ambiente não tinha acesso ao Maven). O projeto usa Kotlin 2.3.20; rodar `./gradlew :core:test` para confirmar no build oficial.
+`core/src/test/kotlin/.../RegrasTest.kt` repete os casos do protótipo em Kotlin e acrescenta casos de formatação, preço médio, dia só com gastos, alteração "só deste mês" e regras da estrada: **39 testes, todos passando**. Foram compilados e executados com o compilador Kotlin 2.0.21 embutido no Gradle, fora do Gradle (o ambiente não tinha acesso ao Maven). Confirmado depois no GitHub Actions com Kotlin 2.3.20 (`./gradlew :core:test`, PR #1), junto com a compilação do `:app` e o APK debug.
 
-Não foram executados: build do `:app`, testes instrumentados, emulador ou aparelho físico.
+Não foram executados: testes instrumentados, emulador ou aparelho físico.
 

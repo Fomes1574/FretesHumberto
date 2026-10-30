@@ -9,7 +9,8 @@
 - GitHub Actions: testes do protótipo e do Android, APK debug a cada push, APK release assinado por tag. Dependabot mensal.
 - `CLAUDE.md`, comandos `/proxima-etapa` e `/conferir`, guia da chave de assinatura e pesquisa de melhorias em outros apps.
 - Corrigida contradição na ARQUITETURA.md: acima da meta o valor final aparece na hora (sem contagem).
-- O `:app` ainda não foi compilado; nenhum APK gerado.
+- Primeiro build no GitHub Actions verde: testes do `:core` no Gradle e APK debug gerado. Ainda não aberto num aparelho.
+- Ícone redesenhado: Fiorino branca em movimento sobre estrada, com sol e céu verde; versão temática (monocromática) para Android 13+. Prévia em `docs/img/13-icone.png`.
 
 ## 30/10/2026 — Documentação e entrega no repositório
 

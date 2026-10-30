@@ -1,6 +1,6 @@
 # Plano de implementação Android
 
-**Em andamento desde 30/10/2026.** Etapa 1 parcialmente pronta (ver abaixo); etapas 2 a 6 por fazer. Os requisitos do produto já estão definidos em [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md). Esta sequência organiza a construção sem ampliar o escopo ou pressupor APK existente.
+**Em andamento desde 30/10/2026.** Etapa 1 quase pronta: falta só abrir o APK num aparelho (ver abaixo); etapas 2 a 6 por fazer. Os requisitos do produto já estão definidos em [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md). Esta sequência organiza a construção sem ampliar o escopo ou pressupor APK existente.
 
 ## Direção
 
@@ -57,9 +57,9 @@ Data financeira é `LocalDate`/conversor equivalente, não timestamp UTC à meia
 
 **Falta para fechar a etapa 1:**
 
-- [ ] Primeiro `./gradlew :core:test :app:assembleDebug` verde (Actions ou Android Studio). O `:app` ainda não foi compilado.
+- [x] Primeiro `./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug` verde no GitHub Actions (30/10/2026, PR #1): testes do `:core` no Gradle e APK debug gerado.
 - [ ] Abrir o APK debug num emulador/celular e ver as quatro abas.
-- [ ] Ajustar qualquer versão que o sync recusar e registrar em DECISOES.md.
+- [x] Nenhuma versão precisou de ajuste: a combinação de `libs.versions.toml` compilou de primeira.
 
 **Saída:** testes de domínio passam no Gradle; APK debug abre; nenhum servidor ou IA é necessário.
 

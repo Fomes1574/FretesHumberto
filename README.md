@@ -2,7 +2,7 @@
 
 Controle simples de fretes, abastecimentos, despesas e metas para um motorista Android com pouca familiaridade com tecnologia. O foco é anotar os valores e ver quanto sobrou no dia, com histórico e relatórios fáceis de consultar.
 
-**Situação em 30/10/2026: protótipo web pronto e Android em construção.** O módulo `core/` já tem todas as regras em Kotlin (39 testes passando) e `app/` é o esqueleto Compose das quatro abas. **Ainda não há APK para instalar.** Para programar com o Claude Code, comece pelo [CLAUDE.md](CLAUDE.md).
+**Situação em 30/10/2026: protótipo web pronto e Android em construção.** O módulo `core/` já tem todas as regras em Kotlin (39 testes passando) e `app/` é o esqueleto Compose das quatro abas, que já compila no CI. **Ainda não há APK de verdade para o motorista**, só o debug de teste. Para programar com o Claude Code, comece pelo [CLAUDE.md](CLAUDE.md).
 
 [![Android](https://github.com/Fomes1574/FretesHumberto/actions/workflows/android.yml/badge.svg)](https://github.com/Fomes1574/FretesHumberto/actions/workflows/android.yml)
 
@@ -85,7 +85,7 @@ Edite `src/` e regenere `docs/prototipo.html`. O gerador aproveita CSS, ícones,
 
 Os 32 testes automatizados passam. A interface foi revisada no navegador em 29/10/2026, incluindo restauração com senha e letra ampliada. **Nenhum teste Android físico, build de APK ou migração Room foi realizado.** O salvamento físico do arquivo de backup não foi confirmado na automação e precisa de teste completo no aparelho. A recorrência atual funciona ao abrir/retomar a página, sem execução com navegador fechado.
 
-O workflow de build existe, mas o primeiro build Android ainda não rodou. Não há integração com a Lalamove nem serviços de nuvem. Exportação CSV/PDF, biometria, manutenção por km e sincronização ainda não foram implementadas.
+O workflow de build roda a cada push e está verde. Não há integração com a Lalamove nem serviços de nuvem. Exportação CSV/PDF, biometria, manutenção por km e sincronização ainda não foram implementadas.
 
 ## Organização
 

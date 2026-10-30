@@ -15,7 +15,7 @@ Documento-fonte: [README.md](../README.md)
 
 Controle simples de fretes, abastecimentos, despesas e metas para um motorista Android com pouca familiaridade com tecnologia. O foco é anotar os valores e ver quanto sobrou no dia, com histórico e relatórios fáceis de consultar.
 
-**Situação em 30/10/2026: protótipo web pronto e Android em construção.** O módulo `core/` já tem todas as regras em Kotlin (39 testes passando) e `app/` é o esqueleto Compose das quatro abas. **Ainda não há APK para instalar.** Para programar com o Claude Code, comece pelo [CLAUDE.md](../CLAUDE.md).
+**Situação em 30/10/2026: protótipo web pronto e Android em construção.** O módulo `core/` já tem todas as regras em Kotlin (39 testes passando) e `app/` é o esqueleto Compose das quatro abas, que já compila no CI. **Ainda não há APK de verdade para o motorista**, só o debug de teste. Para programar com o Claude Code, comece pelo [CLAUDE.md](../CLAUDE.md).
 
 [![Android](https://github.com/Fomes1574/FretesHumberto/actions/workflows/android.yml/badge.svg)](https://github.com/Fomes1574/FretesHumberto/actions/workflows/android.yml)
 
@@ -98,7 +98,7 @@ Edite `src/` e regenere `docs/prototipo.html`. O gerador aproveita CSS, ícones,
 
 Os 32 testes automatizados passam. A interface foi revisada no navegador em 29/10/2026, incluindo restauração com senha e letra ampliada. **Nenhum teste Android físico, build de APK ou migração Room foi realizado.** O salvamento físico do arquivo de backup não foi confirmado na automação e precisa de teste completo no aparelho. A recorrência atual funciona ao abrir/retomar a página, sem execução com navegador fechado.
 
-O workflow de build existe, mas o primeiro build Android ainda não rodou. Não há integração com a Lalamove nem serviços de nuvem. Exportação CSV/PDF, biometria, manutenção por km e sincronização ainda não foram implementadas.
+O workflow de build roda a cada push e está verde. Não há integração com a Lalamove nem serviços de nuvem. Exportação CSV/PDF, biometria, manutenção por km e sincronização ainda não foram implementadas.
 
 ### Organização
 
@@ -135,7 +135,7 @@ App Android offline para um motorista de Fiorino de 52 anos anotar fretes, abast
 
 ### Onde estamos
 
-- **Etapa 1 do [PLANO_ANDROID.md](PLANO_ANDROID.md) quase pronta.** O módulo `:core` tem todas as regras em Kotlin com 39 testes passando. O `:app` é um esqueleto Compose com as quatro abas e **nunca foi compilado**.
+- **Etapa 1 do [PLANO_ANDROID.md](PLANO_ANDROID.md) quase pronta.** O módulo `:core` tem todas as regras em Kotlin com 39 testes passando. O `:app` é um esqueleto Compose com as quatro abas; **compila e gera APK debug no GitHub Actions** (primeiro build verde em 30/10/2026). Falta abri-lo num aparelho.
 - A próxima tarefa é sempre a primeira caixa `[ ]` do PLANO_ANDROID.md.
 - Decisões técnicas fechadas: [docs/DECISOES.md](DECISOES.md) → "Decisões técnicas fechadas em 30/10/2026". Não reabrir.
 
@@ -456,7 +456,7 @@ Documento-fonte: [docs/ESTADO_ATUAL.md](ESTADO_ATUAL.md)
 
 ## Estado atual e mapa do código
 
-Revisão: 30/10/2026. Protótipo web de 29/10/2026 + **início do Android em 30/10/2026**: módulo `:core` com as regras em Kotlin (39 testes passando) e esqueleto do `:app` (Compose, quatro abas, tema, ícone, backup). O `:app` ainda não foi compilado; a primeira compilação acontece no GitHub Actions ou no Android Studio.
+Revisão: 30/10/2026. Protótipo web de 29/10/2026 + **início do Android em 30/10/2026**: módulo `:core` com as regras em Kotlin (39 testes passando) e esqueleto do `:app` (Compose, quatro abas, tema, ícone, backup). O `:app` compilou e gerou APK debug no GitHub Actions (30/10/2026); ainda não foi aberto num aparelho.
 
 ### Implementado versus previsto
 
@@ -474,7 +474,7 @@ Revisão: 30/10/2026. Protótipo web de 29/10/2026 + **início do Android em 30/
 | Armazenamento | `localStorage` do navegador | Room e DataStore no catálogo de versões; backup do Google configurado no manifesto |
 | A/A+/A++ | Implementados; inspeção em largura de celular | Escala Android/TalkBack/teclado pendentes |
 | CSV/PDF, biometria, manutenção por km | Não implementados | Melhorias futuras |
-| APK, assinatura, CI de build, atualização instalada | Não existem | Workflow e assinatura por Secrets preparados; nenhum APK gerado ainda |
+| APK, assinatura, CI de build, atualização instalada | Não existem | APK debug gerado pelo CI a cada push; release assinado preparado (falta criar a chave e os Secrets) |
 | Backend, login, IA, integração Lalamove | Fora do escopo | Não implementar sem mudança de escopo |
 
 ### Fonte do protótipo
@@ -722,6 +722,7 @@ Fretes e despesas são registrados separadamente, um por vez. A ordem de cadastr
 | Negativo | Vermelho `#A9221B`, sempre com sinal de menos (−) |
 | Botões | Pelo menos 48 dp; ações principais com 60–68 dp; cantos arredondados de 14–18 dp |
 | Ícones | Sempre acompanhados de texto nas ações |
+| Ícone do app | Fiorino branca em movimento sobre estrada, sol e céu verde; versão monocromática para ícones temáticos. Arquivos `res/drawable/ic_launcher_*.xml`; prévia em `img/13-icone.png` |
 
 ---
 
@@ -1040,7 +1041,7 @@ Documento-fonte: [docs/PLANO_ANDROID.md](PLANO_ANDROID.md)
 
 ## Plano de implementação Android
 
-**Em andamento desde 30/10/2026.** Etapa 1 parcialmente pronta (ver abaixo); etapas 2 a 6 por fazer. Os requisitos do produto já estão definidos em [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md). Esta sequência organiza a construção sem ampliar o escopo ou pressupor APK existente.
+**Em andamento desde 30/10/2026.** Etapa 1 quase pronta: falta só abrir o APK num aparelho (ver abaixo); etapas 2 a 6 por fazer. Os requisitos do produto já estão definidos em [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md). Esta sequência organiza a construção sem ampliar o escopo ou pressupor APK existente.
 
 ### Direção
 
@@ -1097,9 +1098,9 @@ Data financeira é `LocalDate`/conversor equivalente, não timestamp UTC à meia
 
 **Falta para fechar a etapa 1:**
 
-- [ ] Primeiro `./gradlew :core:test :app:assembleDebug` verde (Actions ou Android Studio). O `:app` ainda não foi compilado.
+- [x] Primeiro `./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug` verde no GitHub Actions (30/10/2026, PR #1): testes do `:core` no Gradle e APK debug gerado.
 - [ ] Abrir o APK debug num emulador/celular e ver as quatro abas.
-- [ ] Ajustar qualquer versão que o sync recusar e registrar em DECISOES.md.
+- [x] Nenhuma versão precisou de ajuste: a combinação de `libs.versions.toml` compilou de primeira.
 
 **Saída:** testes de domínio passam no Gradle; APK debug abre; nenhum servidor ou IA é necessário.
 
@@ -1251,9 +1252,9 @@ Informar data, commit, comando ou fluxo, esperado, observado, aparelho/ambiente 
 
 ### Testes Kotlin do módulo `:core` (30/10/2026)
 
-`core/src/test/kotlin/.../RegrasTest.kt` repete os casos do protótipo em Kotlin e acrescenta casos de formatação, preço médio, dia só com gastos, alteração "só deste mês" e regras da estrada: **39 testes, todos passando**. Foram compilados e executados com o compilador Kotlin 2.0.21 embutido no Gradle, fora do Gradle (o ambiente não tinha acesso ao Maven). O projeto usa Kotlin 2.3.20; rodar `./gradlew :core:test` para confirmar no build oficial.
+`core/src/test/kotlin/.../RegrasTest.kt` repete os casos do protótipo em Kotlin e acrescenta casos de formatação, preço médio, dia só com gastos, alteração "só deste mês" e regras da estrada: **39 testes, todos passando**. Foram compilados e executados com o compilador Kotlin 2.0.21 embutido no Gradle, fora do Gradle (o ambiente não tinha acesso ao Maven). Confirmado depois no GitHub Actions com Kotlin 2.3.20 (`./gradlew :core:test`, PR #1), junto com a compilação do `:app` e o APK debug.
 
-Não foram executados: build do `:app`, testes instrumentados, emulador ou aparelho físico.
+Não foram executados: testes instrumentados, emulador ou aparelho físico.
 
 
 ---
@@ -1403,7 +1404,8 @@ Documento-fonte: [CHANGELOG.md](../CHANGELOG.md)
 - GitHub Actions: testes do protótipo e do Android, APK debug a cada push, APK release assinado por tag. Dependabot mensal.
 - `CLAUDE.md`, comandos `/proxima-etapa` e `/conferir`, guia da chave de assinatura e pesquisa de melhorias em outros apps.
 - Corrigida contradição na ARQUITETURA.md: acima da meta o valor final aparece na hora (sem contagem).
-- O `:app` ainda não foi compilado; nenhum APK gerado.
+- Primeiro build no GitHub Actions verde: testes do `:core` no Gradle e APK debug gerado. Ainda não aberto num aparelho.
+- Ícone redesenhado: Fiorino branca em movimento sobre estrada, com sol e céu verde; versão temática (monocromática) para Android 13+. Prévia em `docs/img/13-icone.png`.
 
 ### 30/10/2026 — Documentação e entrega no repositório
 

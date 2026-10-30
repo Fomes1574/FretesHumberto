@@ -10,7 +10,7 @@ App Android offline para um motorista de Fiorino de 52 anos anotar fretes, abast
 
 ## Onde estamos
 
-- **Etapa 1 do [PLANO_ANDROID.md](docs/PLANO_ANDROID.md) quase pronta.** O módulo `:core` tem todas as regras em Kotlin com 39 testes passando. O `:app` é um esqueleto Compose com as quatro abas e **nunca foi compilado**.
+- **Etapa 1 do [PLANO_ANDROID.md](docs/PLANO_ANDROID.md) quase pronta.** O módulo `:core` tem todas as regras em Kotlin com 39 testes passando. O `:app` é um esqueleto Compose com as quatro abas; **compila e gera APK debug no GitHub Actions** (primeiro build verde em 30/10/2026). Falta abri-lo num aparelho.
 - A próxima tarefa é sempre a primeira caixa `[ ]` do PLANO_ANDROID.md.
 - Decisões técnicas fechadas: [docs/DECISOES.md](docs/DECISOES.md) → "Decisões técnicas fechadas em 30/10/2026". Não reabrir.
 

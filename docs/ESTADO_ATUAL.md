@@ -1,6 +1,6 @@
 # Estado atual e mapa do código
 
-Revisão: 30/10/2026. Protótipo web de 29/10/2026 + **início do Android em 30/10/2026**: módulo `:core` com as regras em Kotlin (39 testes passando) e esqueleto do `:app` (Compose, quatro abas, tema, ícone, backup). O `:app` ainda não foi compilado; a primeira compilação acontece no GitHub Actions ou no Android Studio.
+Revisão: 30/10/2026. Protótipo web de 29/10/2026 + **início do Android em 30/10/2026**: módulo `:core` com as regras em Kotlin (39 testes passando) e esqueleto do `:app` (Compose, quatro abas, tema, ícone, backup). O `:app` compilou e gerou APK debug no GitHub Actions (30/10/2026); ainda não foi aberto num aparelho.
 
 ## Implementado versus previsto
 
@@ -18,7 +18,7 @@ Revisão: 30/10/2026. Protótipo web de 29/10/2026 + **início do Android em 30/
 | Armazenamento | `localStorage` do navegador | Room e DataStore no catálogo de versões; backup do Google configurado no manifesto |
 | A/A+/A++ | Implementados; inspeção em largura de celular | Escala Android/TalkBack/teclado pendentes |
 | CSV/PDF, biometria, manutenção por km | Não implementados | Melhorias futuras |
-| APK, assinatura, CI de build, atualização instalada | Não existem | Workflow e assinatura por Secrets preparados; nenhum APK gerado ainda |
+| APK, assinatura, CI de build, atualização instalada | Não existem | APK debug gerado pelo CI a cada push; release assinado preparado (falta criar a chave e os Secrets) |
 | Backend, login, IA, integração Lalamove | Fora do escopo | Não implementar sem mudança de escopo |
 
 ## Fonte do protótipo

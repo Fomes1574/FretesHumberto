@@ -160,6 +160,7 @@ Fretes e despesas são registrados separadamente, um por vez. A ordem de cadastr
 | Negativo | Vermelho `#A9221B`, sempre com sinal de menos (−) |
 | Botões | Pelo menos 48 dp; ações principais com 60–68 dp; cantos arredondados de 14–18 dp |
 | Ícones | Sempre acompanhados de texto nas ações |
+| Ícone do app | Fiorino branca em movimento sobre estrada, sol e céu verde; versão monocromática para ícones temáticos. Arquivos `res/drawable/ic_launcher_*.xml`; prévia em `img/13-icone.png` |
 
 ---
 

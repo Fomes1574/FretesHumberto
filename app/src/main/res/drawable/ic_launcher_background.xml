@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- Fundo: céu verde, sol, morros e estrada (preenche toda a área, inclusive fora da máscara). -->
+    <path android:pathData="M0,0h108v108h-108z"><aapt:attr name="android:fillColor"><gradient android:type="linear" android:startX="0" android:startY="0" android:endX="0" android:endY="108"><item android:offset="0" android:color="#FF2A8A5C"/><item android:offset="0.6" android:color="#FF1A6A44"/><item android:offset="1" android:color="#FF0E4A2F"/></gradient></aapt:attr></path>
+    <path android:pathData="M52,38 a18,18 0 1,0 36,0 a18,18 0 1,0 -36,0Z"><aapt:attr name="android:fillColor"><gradient android:type="radial" android:centerX="70" android:centerY="38" android:gradientRadius="18"><item android:offset="0" android:color="#99F7D774"/><item android:offset="1" android:color="#00F7D774"/></gradient></aapt:attr></path>
+    <path android:fillColor="#FFF7D774" android:pathData="M63.5,38 a6.5,6.5 0 1,0 13.0,0 a6.5,6.5 0 1,0 -13.0,0Z"/>
+    <path android:fillColor="#FF1F6B47" android:pathData="M0,62 C20,54 36,56 54,59 C72,62 88,54 108,58 L108,68 L0,68Z"/>
+    <path android:pathData="M0,66h108v42h-108z"><aapt:attr name="android:fillColor"><gradient android:type="linear" android:startX="0" android:startY="66" android:endX="0" android:endY="108"><item android:offset="0" android:color="#FF3A403C"/><item android:offset="1" android:color="#FF22262A"/></gradient></aapt:attr></path>
+    <path android:fillColor="#FF9BA39E" android:pathData="M0,66h108v1.2h-108z"/>
+    <path android:fillColor="#FFF1C94A" android:pathData="M-2,74.6 h10 a0.9,0.9 0 0,1 0,1.8 h-10 a0.9,0.9 0 0,1 0,-1.8Z M16,74.6 h10 a0.9,0.9 0 0,1 0,1.8 h-10 a0.9,0.9 0 0,1 0,-1.8Z M34,74.6 h10 a0.9,0.9 0 0,1 0,1.8 h-10 a0.9,0.9 0 0,1 0,-1.8Z M52,74.6 h10 a0.9,0.9 0 0,1 0,1.8 h-10 a0.9,0.9 0 0,1 0,-1.8Z M70,74.6 h10 a0.9,0.9 0 0,1 0,1.8 h-10 a0.9,0.9 0 0,1 0,-1.8Z M88,74.6 h10 a0.9,0.9 0 0,1 0,1.8 h-10 a0.9,0.9 0 0,1 0,-1.8Z M106,74.6 h10 a0.9,0.9 0 0,1 0,1.8 h-10 a0.9,0.9 0 0,1 0,-1.8Z"/>
+</vector>
