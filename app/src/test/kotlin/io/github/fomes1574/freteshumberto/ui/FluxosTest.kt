@@ -1,11 +1,17 @@
 package io.github.fomes1574.freteshumberto.ui
 
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.ComposeTimeoutException
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.isRoot
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
@@ -17,6 +23,9 @@ import io.github.fomes1574.freteshumberto.data.TamanhoLetra
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule
+import org.junit.rules.ExternalResource
+import org.junit.rules.RuleChain
+import org.junit.rules.TestRule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -27,11 +36,22 @@ import org.robolectric.annotation.Config
  * Não substitui o teste no celular: não mede toque, teclado, TalkBack nem desempenho.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35])
+@Config(sdk = [35], qualifiers = "w411dp-h891dp")
 class FluxosTest {
-    @get:Rule val tela = createAndroidComposeRule<MainActivity>()
+    val tela = createAndroidComposeRule<MainActivity>()
 
-    /** Cada teste começa com o banco vazio e letra normal (o arquivo do banco sobrevive entre testes). */
+    /** Apaga banco e preferências ANTES de abrir a tela: os arquivos sobrevivem entre testes. */
+    private val arquivosLimpos = object : ExternalResource() {
+        override fun before() {
+            val c = ApplicationProvider.getApplicationContext<android.content.Context>()
+            c.deleteDatabase(io.github.fomes1574.freteshumberto.data.BancoFretes.NOME)
+            java.io.File(c.filesDir, "datastore").deleteRecursively()
+            java.io.File(c.filesDir, "copias").deleteRecursively()
+        }
+    }
+
+    @get:Rule val regras: TestRule = RuleChain.outerRule(arquivosLimpos).around(tela)
+
     @Before fun limpar() {
         val app = ApplicationProvider.getApplicationContext<FretesApplication>()
         runBlocking {
@@ -43,13 +63,31 @@ class FluxosTest {
 
     private fun existe(texto: String, parte: Boolean = false) = tela.onAllNodesWithText(texto, substring = parte).fetchSemanticsNodes().isNotEmpty()
 
-    private fun esperar(texto: String, parte: Boolean = false) = tela.waitUntil(15_000) { existe(texto, parte) }
+    /** Textos na tela agora, para a mensagem de erro dizer o que apareceu no lugar. */
+    private fun textosNaTela(): String = tela.onAllNodes(isRoot()).fetchSemanticsNodes().flatMap { raiz ->
+        fun coletar(n: androidx.compose.ui.semantics.SemanticsNode): List<String> =
+            (n.config.getOrNull(SemanticsProperties.Text)?.map { it.text } ?: emptyList()) + n.children.flatMap { coletar(it) }
+        coletar(raiz)
+    }.joinToString(" | ")
 
-    private fun esperarSumir(texto: String) = tela.waitUntil(15_000) { !existe(texto) }
+    private fun aguardar(descricao: String, condicao: () -> Boolean) {
+        try {
+            tela.waitUntil(15_000) { condicao() }
+        } catch (e: ComposeTimeoutException) {
+            throw AssertionError("Esperava $descricao. Na tela: ${textosNaTela()}", e)
+        }
+    }
+
+    private fun esperar(texto: String, parte: Boolean = false) = aguardar("ver \"$texto\"") { existe(texto, parte) }
+
+    private fun esperarSumir(texto: String) = aguardar("sumir \"$texto\"") { !existe(texto) }
+
+    /** Clique pela ação de acessibilidade: não depende de posição nem de aviso por cima. */
+    private fun SemanticsNodeInteraction.clicar() = performSemanticsAction(SemanticsActions.OnClick)
 
     private fun campo(i: Int) = tela.onAllNodes(hasSetTextAction())[i]
 
-    private fun tocar(texto: String) = tela.onNodeWithText(texto).performScrollTo().performClick()
+    private fun tocar(texto: String) = tela.onNodeWithText(texto).performScrollTo().clicar()
 
     /** Abre o formulário pelo botão da tela Hoje, digita o valor e salva. */
     private fun anotar(botao: String, valor: String) {
@@ -73,10 +111,10 @@ class FluxosTest {
         anotar("Anotar frete", "80")
         anotar("Outra despesa", "10")
         esperar("R$ 70,00")
-        tela.onNodeWithContentDescription("Apagar Frete de R$ 80,00").performScrollTo().performClick()
+        tela.onNodeWithContentDescription("Apagar Frete de R$ 80,00").performScrollTo().clicar()
         esperar("-R$ 10,00")
         esperar("Desfazer")
-        tela.onNodeWithText("Desfazer").performClick()
+        tela.onNodeWithText("Desfazer").clicar()
         esperar("R$ 70,00")
     }
 
@@ -104,20 +142,20 @@ class FluxosTest {
 
     @Test fun `abas abrem e letra maior funciona`() {
         esperar("Anotar frete")
-        tela.onNodeWithText("Histórico").performClick()
+        tela.onNodeWithText("Histórico").clicar()
         esperar("Ainda não há lançamentos.")
-        tela.onNodeWithText("Relatórios").performClick()
+        tela.onNodeWithText("Relatórios").clicar()
         esperar("LUCRO DA SEMANA")
-        tela.onNodeWithText("Ajustes").performClick()
+        tela.onNodeWithText("Ajustes").clicar()
         esperar("Tamanho da letra")
         tocar("A++")
-        tela.onAllNodesWithText("Hoje")[0].performClick()
+        tela.onAllNodesWithText("Hoje")[0].clicar()
         esperar("Anotar frete")
     }
 
     @Test fun `conta do mes cadastrada hoje e lancada uma vez`() {
         esperar("Anotar frete")
-        tela.onNodeWithText("Histórico").performClick()
+        tela.onNodeWithText("Histórico").clicar()
         esperar("Contas do mês")
         tocar("Contas do mês")
         esperar("Cadastrar despesa mensal")
