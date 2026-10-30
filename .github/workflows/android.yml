@@ -48,6 +48,15 @@ jobs:
       - name: Testes e APK debug (:app)
         run: ./gradlew :app:testDebugUnitTest :app:assembleDebug --stacktrace
 
+      # O esquema do banco (app/schemas) precisa estar no Git: é a base das migrações.
+      - name: Conferir esquema do banco versionado
+        run: |
+          if [ -n "$(git status --porcelain app/schemas)" ]; then
+            echo "::error::Esquema do Room mudou ou não está no Git. Conteúdo gerado:"
+            for f in $(git ls-files --others --modified app/schemas); do echo "===== $f"; cat "$f"; echo; done
+            exit 1
+          fi
+
       - name: Guardar APK debug
         uses: actions/upload-artifact@v4
         with:

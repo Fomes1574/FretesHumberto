@@ -9,6 +9,7 @@
       A cópia manual (.fretes) continua existindo. Regras em res/xml.
     -->
     <application
+        android:name=".FretesApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
