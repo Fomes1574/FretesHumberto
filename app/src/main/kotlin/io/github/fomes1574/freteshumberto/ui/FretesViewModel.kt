@@ -1,8 +1,7 @@
 package io.github.fomes1574.freteshumberto.ui
 
-import android.app.Application
 import android.net.Uri
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.fomes1574.freteshumberto.FretesApplication
 import io.github.fomes1574.freteshumberto.backup.ArquivosCopia
@@ -56,11 +55,10 @@ private const val FALHA_GRAVAR = "Não foi possível salvar. Seus dados anterior
  * Estado das telas e ações. As regras ficam no :core e a gravação no Repositorio; aqui só
  * se chama a operação, se protege contra toque duplo e se avisa o resultado verdadeiro.
  */
-class FretesViewModel(app: Application) : AndroidViewModel(app) {
-    private val fretes = app as FretesApplication
+class FretesViewModel(private val fretes: FretesApplication) : ViewModel() {
     private val repo = fretes.repositorio
     private val prefs = fretes.preferencias
-    private val arquivos = ArquivosCopia(app)
+    private val arquivos = ArquivosCopia(fretes)
 
     private val _erroLeitura = MutableStateFlow<String?>(null)
     /** Falha ao ler o banco: a tela mostra o erro e não troca dados por exemplos (R09). */
