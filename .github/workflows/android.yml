@@ -40,7 +40,7 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
 
       # Mesma chave de depuração em todos os builds: sem ela, cada APK novo teria outra
       # assinatura e o Android não deixaria instalar por cima (perderia os dados).
