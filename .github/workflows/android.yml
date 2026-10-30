@@ -64,6 +64,28 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 7
 
+      # APK de teste com link direto (sem .zip), na página Releases, etiqueta fixa "teste".
+      # Cada execução manual ou push no main troca o arquivo; o link continua o mesmo:
+      # https://github.com/Fomes1574/FretesHumberto/releases/download/teste/MeusFretes-teste.apk
+      - name: Publicar APK de teste nos Releases
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk MeusFretes-teste.apk
+          cat > notas.md <<NOTAS
+          **Versão de teste** do Meus Fretes, gerada automaticamente do commit \`${GITHUB_SHA::7}\` (branch \`${GITHUB_REF_NAME}\`).
+
+          Baixe o arquivo **MeusFretes-teste.apk** abaixo direto no celular (Android 8 ou mais novo) e toque nele para instalar. Se o Android pedir, permita "instalar apps desconhecidos". Se o Play Protect avisar, toque em "Instalar mesmo assim".
+
+          - Aparece no celular como **Meus Fretes (teste)** e fica separado da versão definitiva.
+          - Não é a versão assinada para uso real: ela não vai ser atualizada por cima da versão definitiva. Para levar dados de uma para outra, use Ajustes → Fazer cópia / Restaurar cópia.
+          - Não tem nenhum dado real.
+          NOTAS
+          gh release delete teste --yes --cleanup-tag || true
+          gh release create teste MeusFretes-teste.apk --prerelease --target "$GITHUB_SHA" \
+            --title "Meus Fretes — versão de teste" --notes-file notas.md
+
       - name: Guardar relatórios de teste
         if: failure()
         uses: actions/upload-artifact@v4
