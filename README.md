@@ -30,7 +30,7 @@ Controle simples de fretes, abastecimentos, despesas e metas para um motorista A
 - Sem contas a receber, módulo de investimentos ou julgamento “compensa/não compensa”.
 - Semana de segunda a domingo. Intervalos personalizados de até seis meses por consulta, com histórico preservado e editável.
 - Contas mensais com ocorrência única por conta+mês. Dia 31 ajusta para 30 quando necessário; fevereiro usa 28 para vencimentos 29–31, inclusive bissexto, conforme decisão do projeto.
-- Metas diárias com vigência; meta mensal por mês escolhido. Não sobrescrever metas antigas.
+- Só meta diária: vale do dia em que mudou em diante; dias passados mantêm a meta antiga. O dia vira às 00:00 de Brasília.
 - Sem cadastro, servidor, anúncios, assinatura ou API paga. Dados reais ficam no aparelho.
 
 As regras detalhadas estão em [REGRAS_DE_NEGOCIO.md](docs/REGRAS_DE_NEGOCIO.md). “Lucro” significa o resultado dos valores cadastrados, sem estimar custos ausentes.

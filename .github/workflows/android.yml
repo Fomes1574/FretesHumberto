@@ -73,10 +73,11 @@ jobs:
           retention-days: 7
 
       # APK com link direto (sem .zip) na página Releases, etiqueta fixa "meus-fretes".
-      # Cada execução manual ou push no main troca o arquivo; o link continua o mesmo:
+      # Só no main (mesma chave de depuração sempre). Cada push ou execução manual no main troca
+      # o arquivo; o link continua o mesmo:
       # https://github.com/Fomes1574/FretesHumberto/releases/download/meus-fretes/MeusFretes.apk
       - name: Publicar APK nos Releases
-        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

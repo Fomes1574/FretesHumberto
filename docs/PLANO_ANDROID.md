@@ -29,11 +29,9 @@ Os nomes finais podem variar, preservando invariantes e migrações. Não existe
 | Detalhe de abastecimento | Chave do lançamento; litros em centésimos, preço em centavos, modo de entrada |
 | Detalhe de despesa | Chave do lançamento e categoria; origem recorrente opcional, nunca freteId |
 | Meta diária | Data de início única e valor; consultar maior vigência ≤ data |
-| Meta mensal | Mês de referência único e valor; definir base inicial explicitamente |
 | Recorrência | ID e início; versões mantêm nome, valor, dia original, atividade e fim |
 | Versão da recorrência | Recorrência+mês de vigência únicos; preservar versões anteriores |
 | Ocorrência mensal | Recorrência+mês únicos, status, lançamento opcional e exceção individual; mês pulado persistente |
-| Revisão/conferência de dia | Data, revisão atual, revisão conferida e timestamp; alteração invalida marca |
 | Referência manual do combustível | Preço, data financeira e timestamp para desempate; não reescreve abastecimentos |
 
 Detalhes técnicos podem ter cascade ao seu próprio lançamento. **Nunca criar cascade de frete para despesa/abastecimento.** Ocorrência mensal deve continuar representando um mês pulado mesmo depois de excluir a despesa associada.
@@ -50,7 +48,7 @@ Data financeira é `LocalDate`/conversor equivalente, não timestamp UTC à meia
 
 - [x] Projeto Gradle com `:core` (Kotlin/JVM) e `:app` (Android/Compose), catálogo de versões e wrapper do Gradle 9.3.0.
 - [x] SDK mínimo 26, target/compile 36, `applicationId` `io.github.fomes1574.freteshumberto` (DECISOES.md).
-- [x] Regras portadas para Kotlin em `core/`: dinheiro, datas, resumo do período, metas, calculadora, combustível, preço de referência, contas do mês, diário (salvar/apagar/desfazer/conferir) e regras da estrada.
+- [x] Regras portadas para Kotlin em `core/`: dinheiro, datas, resumo do período, metas, calculadora, combustível, preço de referência, contas do mês, diário (salvar/apagar/desfazer) e regras da estrada.
 - [x] 39 testes JUnit em `core/src/test` com os mesmos casos do protótipo, **todos passando** no Gradle (`./gradlew :core:test`).
 - [x] Esqueleto do app: quatro abas com ícone e texto, tema bege/verde, Atkinson Hyperlegible em `res/font`, ícone adaptativo com a Fiorino, backup do Google configurado.
 - [x] Workflow do GitHub Actions: testes + APK debug a cada push; APK release assinado quando houver Secrets.
@@ -65,11 +63,11 @@ Data financeira é `LocalDate`/conversor equivalente, não timestamp UTC à meia
 
 ### 2. Banco e operações
 
-- [x] Entidades, DAO, índices e esquema exportado do Room (versão 1 em `app/schemas/`, conferido pelo CI). Lançamento numa tabela só, com colunas opcionais por tipo e **nenhuma coluna que ligue gasto a frete**.
+- [x] Entidades, DAO, índices e esquema exportado do Room (versão 2 em `app/schemas/`, conferido pelo CI). Lançamento numa tabela só, com colunas opcionais por tipo e **nenhuma coluna que ligue gasto a frete**.
 - [x] Salvar/editar/excluir/desfazer e revisão dos dias: `data/Repositorio.kt` lê o estado, aplica a regra do `:core` e grava só a diferença (`core/Estado.kt`, `Mudancas`), tudo numa transação.
 - [x] Mover frete sem mexer nos gastos e falha de gravação sem falso sucesso: testes `RepositorioTest` (Robolectric) e `FluxosTest`; a tela só mostra "Salvo" depois da gravação.
 - [x] IDs preservados; sem `fallbackToDestructiveMigration`. Lista `MIGRACOES` pronta para a versão 2.
-- [ ] Primeira migração real (quando o esquema mudar): escrever `Migration(1, 2)` e teste com `MigrationTestHelper`.
+- [x] Primeira migração real: `MIGRACAO_1_2` (30/10/2026) tira meta mensal e conferência, com teste (`MigracaoTest`) que abre um banco da versão 1 e confere os dados.
 
 **Saída:** operações testadas na JVM com Room em memória; totais sempre derivados do banco.
 

@@ -9,11 +9,11 @@ Revisão: 30/10/2026 (tarde). Protótipo web de 29/10/2026 + **app Android com a
 | Hoje, Histórico, Relatórios, Ajustes | Implementados em HTML/JS | Implementados em Compose (`ui/`); testados na JVM, não no aparelho |
 | Fretes, abastecimentos e despesas independentes | Implementados | Implementados; banco sem coluna que ligue gasto a frete |
 | Calculadora isolada | Implementada, sem gravação no diário | Implementada com estado só da tela (`ui/lancamento/TelaCalculadora.kt`) |
-| Metas por vigência/mês | Implementadas | Implementadas; gravadas no banco (`meta_diaria`, `meta_mensal`) |
+| Metas | Diária com vigência e mensal por mês | **Só diária** (mensal retirada em 30/10/2026); vale do dia em que mudou em diante (`meta_diaria`) |
 | Dia, semana, mês, personalizado e dois dias | Implementados | Implementados (`ui/relatorios/`, `core/Textos.kt`) |
 | Recorrências com versões, exceções e mês pulado | Implementadas ao abrir/retomar | Implementadas: abertura do app + WorkManager a cada 12 h, mesma função idempotente |
 | Gráficos e estrada/Fiorino | SVG/JS | Compose Canvas (`ui/relatorios/Graficos.kt`, `ui/estrada/CenaEstrada.kt`) |
-| Conferência e desfazer exclusão | Implementados | Implementados (Desfazer por 6 s) |
+| Desfazer exclusão | Implementado (o protótipo também tem conferência de dia) | Desfazer por 6 s; **sem conferência de dia** (retirada em 30/10/2026) |
 | Cópia validada e senha opcional | Implementadas; salvamento físico não confirmado na automação | Implementadas com o seletor de arquivos; gravação conferida lendo de volta; **não testado no aparelho** |
 | Armazenamento | `localStorage` do navegador | Room (esquema v1 versionado) + DataStore; backup do Google no manifesto |
 | A/A+/A++ | Implementados; inspeção em largura de celular | Implementados; escala do Android, TalkBack e teclado não conferidos no aparelho |
@@ -26,7 +26,7 @@ Revisão: 30/10/2026 (tarde). Protótipo web de 29/10/2026 + **app Android com a
 | Pasta / arquivo | O que tem |
 |---|---|
 | `core/.../Dinheiro.kt`, `Datas.kt`, `Modelo.kt`, `Calculos.kt` | Dinheiro em centavos, datas, metas, resumo do período, calculadora, combustível |
-| `core/.../Diario.kt`, `Recorrencias.kt`, `Contas.kt` | Salvar/apagar/desfazer/conferir; geração e ações das contas do mês |
+| `core/.../Diario.kt`, `Recorrencias.kt`, `Contas.kt` | Salvar/apagar/desfazer; geração e ações das contas do mês |
 | `core/.../Estado.kt` | Estado completo e `Mudancas` (o que gravar entre dois estados) |
 | `core/.../Copia.kt` | Formato `.fretes` (JSON versão 1), validação, senha AES-GCM/PBKDF2 |
 | `core/.../Textos.kt` | Datas em português, filtro de relatório, comparação, resumo do WhatsApp, histórico, lembrete |
@@ -37,7 +37,7 @@ Revisão: 30/10/2026 (tarde). Protótipo web de 29/10/2026 + **app Android com a
 | `app/.../ui/` | `FretesApp` (abas, telas por cima, avisos, restauração), `FretesViewModel` e uma pasta por tela |
 | `app/schemas/` | Esquema do banco exportado pelo Room (o CI falha se não estiver no Git) |
 
-Formato da cópia Android: `{"formato":"meus-fretes","versao":1,...}`; com senha, envelope `meus-fretes-cifrado` com `kdf`, `iteracoes`, `sal`, `iv` e `dados` em base64. **Não é o formato do protótipo**: o Android não lê cópias do protótipo (decisão de 30/10/2026).
+Formato da cópia Android: `{"formato":"meus-fretes","versao":2,...}` (a versão 1, com meta mensal e conferências, ainda é lida e esses campos são ignorados); com senha, envelope `meus-fretes-cifrado` com `kdf`, `iteracoes`, `sal`, `iv` e `dados` em base64. **Não é o formato do protótipo**: o Android não lê cópias do protótipo (decisão de 30/10/2026).
 
 ## Fonte do protótipo
 

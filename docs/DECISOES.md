@@ -17,7 +17,7 @@ Consolidação em 30/10/2026. As regras atuais estão em [REGRAS_DE_NEGOCIO.md](
 | Semana | Segunda a domingo completo | Próxima segunda fica fora |
 | Consulta | Até seis meses por intervalo | Preservar dados antigos e permitir edição sem prazo |
 | Dois dias | Soma e comparação só das duas datas | Não consultar automaticamente todo intervalo entre elas |
-| Metas | Diária com vigência, mensal por mês | Não aplicar configurações novas retroativamente |
+| Metas | **Só meta diária** (meta mensal retirada em 30/10/2026). Vale do dia em que mudou em diante | Dias passados mantêm a meta que tinham; não editar meta de dia passado |
 | Comparação | Recortes equivalentes quando parcial | Explicitar datas e parcialidade |
 | Contas mensais | Na primeira versão | Ocorrência única, ajustes de dia e controle de exceções |
 | Fevereiro | Dia 28 para vencimentos 29–31, inclusive bissexto | Preservar dia original para março; não “corrigir” para 29 |
@@ -42,6 +42,17 @@ Tomadas pelo usuário para iniciar o Android. Não reabrir sem pedido dele.
 | Toolchain | AGP 9.0.1 (Kotlin embutido), Gradle 9.3.0, Kotlin 2.3.20, KSP 2.3.5, Compose BOM 2026.03.00, Room 2.8.4, DataStore 1.2.1, JDK 17 | Combinação compatível com compileSdk 36, conferida nas notas oficiais. Fonte: `gradle/libs.versions.toml` |
 | Build do APK | GitHub Actions (repositório público) + Android Studio local | Workflow em `.github/workflows/android.yml`. APK de release assinado só com Secrets configurados |
 | Assinatura | Uma chave para sempre, fora do Git, em duas cópias | Passo a passo em [CHAVE_ASSINATURA.md](CHAVE_ASSINATURA.md) |
+
+## Decisões do usuário em 30/10/2026 (noite)
+
+| Tema | Decisão | Consequência |
+|---|---|---|
+| Meta mensal | **Retirada de tudo** | Sai de Ajustes, Relatórios, resumo do WhatsApp, banco (migração 1→2) e cópia (versão 2) |
+| Meta diária | Mudar vale para o dia em que mudou e os seguintes | Ex.: às 23:30 sobe para R$ 300 → aquele dia e os próximos usam R$ 300; os anteriores continuam com a meta antiga |
+| Dia conferido | **Retirado** | Sai da tela Hoje, Relatórios, Histórico, banco e cópia |
+| Virada do dia | **00:00 pelo horário de Brasília** (`America/Sao_Paulo`) | Novo dia, sem fretes nem despesas; independe do fuso do celular |
+| Nome no celular | **Meus Fretes** | O APK publicado não leva "teste" no nome |
+| Entrega | Direto no `main` | APK com link direto em Releases → "Meus Fretes" |
 
 ## Escolhas de implementação (30/10/2026, tarde)
 

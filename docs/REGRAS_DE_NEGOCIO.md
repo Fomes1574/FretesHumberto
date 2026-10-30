@@ -30,8 +30,9 @@ Fretes R$ 285 − combustível R$ 40 − despesas R$ 20 = **R$ 225**. Com meta R
 - Entrada limita a duas casas por truncamento: `54.0599` vira `54,05`. Resultados calculados de divisão são arredondados a duas casas; não confundir as operações.
 - Valores de lançamentos são positivos; o tipo define entrada ou saída. Resultados podem ser negativos.
 - Data financeira local sem horário: `AAAA-MM-DD`. Criação/edição técnica tem timestamp separado.
+- **O dia vira às 00:00 pelo horário de Brasília** (`America/Sao_Paulo`), mesmo se o celular estiver em outro fuso. Depois da meia-noite, "hoje" é um dia novo, sem fretes nem despesas; os do dia anterior ficam no Histórico.
 - Novos lançamentos começam em hoje, sem data financeira futura. Campos adicionais dependem do tipo: abastecimento exige preço ou litros; recorrência exige nome e repetição.
-- Edição sem prazo de expiração. Qualquer lançamento antigo pode ser corrigido, mesmo depois de conferido. Duração opcional em minutos inteiros: abrir/salvar 17 minutos mantém 17.
+- Edição sem prazo de expiração. Qualquer lançamento antigo pode ser corrigido. Duração opcional em minutos inteiros: abrir/salvar 17 minutos mantém 17.
 
 ## R04 — Combustível
 
@@ -65,15 +66,15 @@ Simular, limpar, fechar e alterar parâmetros não grava frete/despesa, não alt
 
 Sem “não cobre os custos”, “abaixo do objetivo”, “dentro do objetivo” ou semáforo de rentabilidade. Mostrar números. R$/km e R$/hora são exclusivos da simulação; relatórios não dividem gastos do período pelos km/minutos de fretes parcialmente preenchidos.
 
-## R06 — Metas e conferência
+## R06 — Meta diária
 
-Meta diária com vigência: alteração em hoje vale de hoje em diante, preservando datas anteriores. A arquitetura admite vigência explícita; o formulário atual usa hoje. Meta mensal pertence ao mês escolhido e não muda os demais.
+Só existe **meta diária** (decisão de 30/10/2026: a meta mensal saiu de tudo). Mudar a meta vale **para o dia em que mudou e para os seguintes**; os dias que já passaram continuam com a meta que tinham. Ex.: às 23:30 ele fez vários fretes e sobe a meta de R$ 250 para R$ 300: aquele dia já passa a contar com R$ 300, os próximos também, e os dias anteriores continuam com R$ 250. A meta de dias passados não é editada.
 
 Meta atingida quando lucro ≥ meta. Textos: “Faltam R$ X”, “Meta atingida”, “Meta atingida · R$ X acima”. R$ 250 é exemplo inicial, não valor fixo do produto.
 
 Dia trabalhado = dia com pelo menos um frete. Só esses dias entram na contagem de metas. A média por dia trabalhado divide o resultado total do período por essa quantidade; o rótulo deve ser claro, pois o total inclui gastos em dias sem frete.
 
-Conferir dia é revisão opcional, não bloqueio. Alteração posterior deixa a conferência desatualizada. Corrigir lançamento antigo continua permitido e é diferente de sobrescrever sua meta histórica.
+Corrigir lançamento antigo continua permitido e não muda a meta daquele dia. Não há marca de "dia conferido" (retirada em 30/10/2026).
 
 ## R07 — Períodos
 
@@ -124,7 +125,7 @@ São registros locais, não pagamentos bancários. O protótipo processa ao abri
 
 Dados no aparelho. Arquivo `.fretes` exportado manualmente, senha opcional e lembrete semanal dentro do app. Não criar automação externa do ChatGPT.
 
-Cópia preserva lançamentos, IDs, detalhes, metas históricas, versões de recorrência, exceções, meses pulados e conferências. Validar formato, versão, tipos, datas, limites, duplicidades e integridade antes de substituir. Falha mantém estado anterior.
+Cópia preserva lançamentos, IDs, detalhes, metas diárias históricas, versões de recorrência, exceções e meses pulados. Validar formato, versão, tipos, datas, limites, duplicidades e integridade antes de substituir. Falha mantém estado anterior.
 
 Protótipo: AES-256-GCM, PBKDF2-SHA256 com 210 mil iterações, salt aleatório de 16 bytes e IV de 12 bytes. WebCrypto ou implementação incorporada compatível. Senha não é salva e não tem recuperação. Cópia sem senha é legível; a cópia preventiva da restauração é sem senha e a tela informa isso.
 

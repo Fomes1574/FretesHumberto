@@ -43,7 +43,7 @@ Controle simples de fretes, abastecimentos, despesas e metas para um motorista A
 - Sem contas a receber, módulo de investimentos ou julgamento “compensa/não compensa”.
 - Semana de segunda a domingo. Intervalos personalizados de até seis meses por consulta, com histórico preservado e editável.
 - Contas mensais com ocorrência única por conta+mês. Dia 31 ajusta para 30 quando necessário; fevereiro usa 28 para vencimentos 29–31, inclusive bissexto, conforme decisão do projeto.
-- Metas diárias com vigência; meta mensal por mês escolhido. Não sobrescrever metas antigas.
+- Só meta diária: vale do dia em que mudou em diante; dias passados mantêm a meta antiga. O dia vira às 00:00 de Brasília.
 - Sem cadastro, servidor, anúncios, assinatura ou API paga. Dados reais ficam no aparelho.
 
 As regras detalhadas estão em [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md). “Lucro” significa o resultado dos valores cadastrados, sem estimar custos ausentes.
@@ -182,7 +182,9 @@ Sem rede, ainda dá para trabalhar no `:core` (Kotlin puro) e no protótipo. Nã
 
 - Pacote base `io.github.fomes1574.freteshumberto`. Regras em `.core`, nunca dentro de Composable ou ViewModel.
 - Dinheiro em `Long` (centavos), litros e km em centésimos (`Long`), duração em minutos (`Int`), datas financeiras em `LocalDate`. Nada de `Double` para dinheiro.
-- Cada operação do `Diario` (salvar, apagar, restaurar, conferir, gerar contas) = **uma transação Room**.
+- Cada operação do `Diario` (salvar, apagar, restaurar, gerar contas) = **uma transação Room**.
+- "Hoje" é sempre `Datas.hoje(relogio)`: vira às 00:00 de Brasília. Não usar `LocalDate.now()` direto.
+- Telas observam `Repositorio.estado`, que tem um sinal por tabela. Tabela nova? Acrescente o sinal dela no `FretesDao` e no `combine`.
 - Sem `fallbackToDestructiveMigration`. Esquema exportado em `app/schemas/` e versionado; o CI falha se o esquema gerado não estiver no Git (o log mostra o arquivo para copiar).
 - Mudou uma tabela? Suba `version` em `BancoFretes`, acrescente a `Migration` em `MIGRACOES` e um teste.
 - Textos da interface em português simples, curtos, sem julgamento ("compensa", "ruim"). Ícone sempre com texto.
@@ -222,8 +224,8 @@ Instruções explícitas do usuário prevalecem. Para decisões de produto, use 
 2. Combustível sai do diário pelos abastecimentos cadastrados. A estimativa fica só na calculadora isolada, que não grava lançamentos.
 3. Não reintroduzir recebimento pendente, CDB/investimentos ou classificação de rentabilidade.
 4. Datas financeiras locais sem horário. Semana segunda inclusiva até a próxima segunda exclusiva. Sem relatórios por hora; duração opcional em minutos continua permitida.
-5. Filtro de seis meses não apaga histórico nem impede editar lançamentos antigos. Conferir dia não bloqueia edição.
-6. Preservar metas históricas. Meta mensal pertence ao mês de referência.
+5. Filtro de seis meses não apaga histórico nem impede editar lançamentos antigos. O dia vira às 00:00 de Brasília.
+6. Só existe meta diária: vale do dia em que mudou em diante e preserva a meta dos dias passados. Não reintroduzir meta mensal nem "dia conferido" (retirados em 30/10/2026).
 7. Recorrência idempotente, única por conta+mês. Respeitar mês pulado, versões e exceções. Fevereiro usa dia 28 para vencimentos 29–31, inclusive bissexto: é decisão deliberada.
 8. Não adicionar backend, login, analytics, IA no produto, API paga ou dependência de internet. Linguagem curta, comum e centrada nos valores.
 9. Nunca versionar dados financeiros reais, cópias pessoais, chaves ou credenciais. A fixture existente é fictícia e documentada.
@@ -290,8 +292,9 @@ Fretes R$ 285 − combustível R$ 40 − despesas R$ 20 = **R$ 225**. Com meta R
 - Entrada limita a duas casas por truncamento: `54.0599` vira `54,05`. Resultados calculados de divisão são arredondados a duas casas; não confundir as operações.
 - Valores de lançamentos são positivos; o tipo define entrada ou saída. Resultados podem ser negativos.
 - Data financeira local sem horário: `AAAA-MM-DD`. Criação/edição técnica tem timestamp separado.
+- **O dia vira às 00:00 pelo horário de Brasília** (`America/Sao_Paulo`), mesmo se o celular estiver em outro fuso. Depois da meia-noite, "hoje" é um dia novo, sem fretes nem despesas; os do dia anterior ficam no Histórico.
 - Novos lançamentos começam em hoje, sem data financeira futura. Campos adicionais dependem do tipo: abastecimento exige preço ou litros; recorrência exige nome e repetição.
-- Edição sem prazo de expiração. Qualquer lançamento antigo pode ser corrigido, mesmo depois de conferido. Duração opcional em minutos inteiros: abrir/salvar 17 minutos mantém 17.
+- Edição sem prazo de expiração. Qualquer lançamento antigo pode ser corrigido. Duração opcional em minutos inteiros: abrir/salvar 17 minutos mantém 17.
 
 ### R04 — Combustível
 
@@ -325,15 +328,15 @@ Simular, limpar, fechar e alterar parâmetros não grava frete/despesa, não alt
 
 Sem “não cobre os custos”, “abaixo do objetivo”, “dentro do objetivo” ou semáforo de rentabilidade. Mostrar números. R$/km e R$/hora são exclusivos da simulação; relatórios não dividem gastos do período pelos km/minutos de fretes parcialmente preenchidos.
 
-### R06 — Metas e conferência
+### R06 — Meta diária
 
-Meta diária com vigência: alteração em hoje vale de hoje em diante, preservando datas anteriores. A arquitetura admite vigência explícita; o formulário atual usa hoje. Meta mensal pertence ao mês escolhido e não muda os demais.
+Só existe **meta diária** (decisão de 30/10/2026: a meta mensal saiu de tudo). Mudar a meta vale **para o dia em que mudou e para os seguintes**; os dias que já passaram continuam com a meta que tinham. Ex.: às 23:30 ele fez vários fretes e sobe a meta de R$ 250 para R$ 300: aquele dia já passa a contar com R$ 300, os próximos também, e os dias anteriores continuam com R$ 250. A meta de dias passados não é editada.
 
 Meta atingida quando lucro ≥ meta. Textos: “Faltam R$ X”, “Meta atingida”, “Meta atingida · R$ X acima”. R$ 250 é exemplo inicial, não valor fixo do produto.
 
 Dia trabalhado = dia com pelo menos um frete. Só esses dias entram na contagem de metas. A média por dia trabalhado divide o resultado total do período por essa quantidade; o rótulo deve ser claro, pois o total inclui gastos em dias sem frete.
 
-Conferir dia é revisão opcional, não bloqueio. Alteração posterior deixa a conferência desatualizada. Corrigir lançamento antigo continua permitido e é diferente de sobrescrever sua meta histórica.
+Corrigir lançamento antigo continua permitido e não muda a meta daquele dia. Não há marca de "dia conferido" (retirada em 30/10/2026).
 
 ### R07 — Períodos
 
@@ -384,7 +387,7 @@ São registros locais, não pagamentos bancários. O protótipo processa ao abri
 
 Dados no aparelho. Arquivo `.fretes` exportado manualmente, senha opcional e lembrete semanal dentro do app. Não criar automação externa do ChatGPT.
 
-Cópia preserva lançamentos, IDs, detalhes, metas históricas, versões de recorrência, exceções, meses pulados e conferências. Validar formato, versão, tipos, datas, limites, duplicidades e integridade antes de substituir. Falha mantém estado anterior.
+Cópia preserva lançamentos, IDs, detalhes, metas diárias históricas, versões de recorrência, exceções e meses pulados. Validar formato, versão, tipos, datas, limites, duplicidades e integridade antes de substituir. Falha mantém estado anterior.
 
 Protótipo: AES-256-GCM, PBKDF2-SHA256 com 210 mil iterações, salt aleatório de 16 bytes e IV de 12 bytes. WebCrypto ou implementação incorporada compatível. Senha não é salva e não tem recuperação. Cópia sem senha é legível; a cópia preventiva da restauração é sem senha e a tela informa isso.
 
@@ -424,7 +427,7 @@ Consolidação em 30/10/2026. As regras atuais estão em [REGRAS_DE_NEGOCIO.md](
 | Semana | Segunda a domingo completo | Próxima segunda fica fora |
 | Consulta | Até seis meses por intervalo | Preservar dados antigos e permitir edição sem prazo |
 | Dois dias | Soma e comparação só das duas datas | Não consultar automaticamente todo intervalo entre elas |
-| Metas | Diária com vigência, mensal por mês | Não aplicar configurações novas retroativamente |
+| Metas | **Só meta diária** (meta mensal retirada em 30/10/2026). Vale do dia em que mudou em diante | Dias passados mantêm a meta que tinham; não editar meta de dia passado |
 | Comparação | Recortes equivalentes quando parcial | Explicitar datas e parcialidade |
 | Contas mensais | Na primeira versão | Ocorrência única, ajustes de dia e controle de exceções |
 | Fevereiro | Dia 28 para vencimentos 29–31, inclusive bissexto | Preservar dia original para março; não “corrigir” para 29 |
@@ -449,6 +452,17 @@ Tomadas pelo usuário para iniciar o Android. Não reabrir sem pedido dele.
 | Toolchain | AGP 9.0.1 (Kotlin embutido), Gradle 9.3.0, Kotlin 2.3.20, KSP 2.3.5, Compose BOM 2026.03.00, Room 2.8.4, DataStore 1.2.1, JDK 17 | Combinação compatível com compileSdk 36, conferida nas notas oficiais. Fonte: `gradle/libs.versions.toml` |
 | Build do APK | GitHub Actions (repositório público) + Android Studio local | Workflow em `.github/workflows/android.yml`. APK de release assinado só com Secrets configurados |
 | Assinatura | Uma chave para sempre, fora do Git, em duas cópias | Passo a passo em [CHAVE_ASSINATURA.md](CHAVE_ASSINATURA.md) |
+
+### Decisões do usuário em 30/10/2026 (noite)
+
+| Tema | Decisão | Consequência |
+|---|---|---|
+| Meta mensal | **Retirada de tudo** | Sai de Ajustes, Relatórios, resumo do WhatsApp, banco (migração 1→2) e cópia (versão 2) |
+| Meta diária | Mudar vale para o dia em que mudou e os seguintes | Ex.: às 23:30 sobe para R$ 300 → aquele dia e os próximos usam R$ 300; os anteriores continuam com a meta antiga |
+| Dia conferido | **Retirado** | Sai da tela Hoje, Relatórios, Histórico, banco e cópia |
+| Virada do dia | **00:00 pelo horário de Brasília** (`America/Sao_Paulo`) | Novo dia, sem fretes nem despesas; independe do fuso do celular |
+| Nome no celular | **Meus Fretes** | O APK publicado não leva "teste" no nome |
+| Entrega | Direto no `main` | APK com link direto em Releases → "Meus Fretes" |
 
 ### Escolhas de implementação (30/10/2026, tarde)
 
@@ -486,11 +500,11 @@ Revisão: 30/10/2026 (tarde). Protótipo web de 29/10/2026 + **app Android com a
 | Hoje, Histórico, Relatórios, Ajustes | Implementados em HTML/JS | Implementados em Compose (`ui/`); testados na JVM, não no aparelho |
 | Fretes, abastecimentos e despesas independentes | Implementados | Implementados; banco sem coluna que ligue gasto a frete |
 | Calculadora isolada | Implementada, sem gravação no diário | Implementada com estado só da tela (`ui/lancamento/TelaCalculadora.kt`) |
-| Metas por vigência/mês | Implementadas | Implementadas; gravadas no banco (`meta_diaria`, `meta_mensal`) |
+| Metas | Diária com vigência e mensal por mês | **Só diária** (mensal retirada em 30/10/2026); vale do dia em que mudou em diante (`meta_diaria`) |
 | Dia, semana, mês, personalizado e dois dias | Implementados | Implementados (`ui/relatorios/`, `core/Textos.kt`) |
 | Recorrências com versões, exceções e mês pulado | Implementadas ao abrir/retomar | Implementadas: abertura do app + WorkManager a cada 12 h, mesma função idempotente |
 | Gráficos e estrada/Fiorino | SVG/JS | Compose Canvas (`ui/relatorios/Graficos.kt`, `ui/estrada/CenaEstrada.kt`) |
-| Conferência e desfazer exclusão | Implementados | Implementados (Desfazer por 6 s) |
+| Desfazer exclusão | Implementado (o protótipo também tem conferência de dia) | Desfazer por 6 s; **sem conferência de dia** (retirada em 30/10/2026) |
 | Cópia validada e senha opcional | Implementadas; salvamento físico não confirmado na automação | Implementadas com o seletor de arquivos; gravação conferida lendo de volta; **não testado no aparelho** |
 | Armazenamento | `localStorage` do navegador | Room (esquema v1 versionado) + DataStore; backup do Google no manifesto |
 | A/A+/A++ | Implementados; inspeção em largura de celular | Implementados; escala do Android, TalkBack e teclado não conferidos no aparelho |
@@ -503,7 +517,7 @@ Revisão: 30/10/2026 (tarde). Protótipo web de 29/10/2026 + **app Android com a
 | Pasta / arquivo | O que tem |
 |---|---|
 | `core/.../Dinheiro.kt`, `Datas.kt`, `Modelo.kt`, `Calculos.kt` | Dinheiro em centavos, datas, metas, resumo do período, calculadora, combustível |
-| `core/.../Diario.kt`, `Recorrencias.kt`, `Contas.kt` | Salvar/apagar/desfazer/conferir; geração e ações das contas do mês |
+| `core/.../Diario.kt`, `Recorrencias.kt`, `Contas.kt` | Salvar/apagar/desfazer; geração e ações das contas do mês |
 | `core/.../Estado.kt` | Estado completo e `Mudancas` (o que gravar entre dois estados) |
 | `core/.../Copia.kt` | Formato `.fretes` (JSON versão 1), validação, senha AES-GCM/PBKDF2 |
 | `core/.../Textos.kt` | Datas em português, filtro de relatório, comparação, resumo do WhatsApp, histórico, lembrete |
@@ -514,7 +528,7 @@ Revisão: 30/10/2026 (tarde). Protótipo web de 29/10/2026 + **app Android com a
 | `app/.../ui/` | `FretesApp` (abas, telas por cima, avisos, restauração), `FretesViewModel` e uma pasta por tela |
 | `app/schemas/` | Esquema do banco exportado pelo Room (o CI falha se não estiver no Git) |
 
-Formato da cópia Android: `{"formato":"meus-fretes","versao":1,...}`; com senha, envelope `meus-fretes-cifrado` com `kdf`, `iteracoes`, `sal`, `iv` e `dados` em base64. **Não é o formato do protótipo**: o Android não lê cópias do protótipo (decisão de 30/10/2026).
+Formato da cópia Android: `{"formato":"meus-fretes","versao":2,...}` (a versão 1, com meta mensal e conferências, ainda é lida e esses campos são ignorados); com senha, envelope `meus-fretes-cifrado` com `kdf`, `iteracoes`, `sal`, `iv` e `dados` em base64. **Não é o formato do protótipo**: o Android não lê cópias do protótipo (decisão de 30/10/2026).
 
 ### Fonte do protótipo
 
@@ -615,7 +629,7 @@ O app é para um motorista de Fiorino, que faz fretes todos os dias e tem pouca 
 
 - anotar fretes, abastecimentos e despesas em poucos toques;
 - ver **quanto lucrou hoje**, depois de descontar o combustível e as outras despesas;
-- acompanhar uma **meta diária** e uma **meta mensal**;
+- acompanhar uma **meta diária** (a meta mensal foi retirada em 30/10/2026);
 - consultar relatórios de **dia, semana, mês e período personalizado de até 6 meses**, com destaque para o **gasto de combustível**;
 - mandar um resumo para o filho pelo WhatsApp.
 
@@ -636,7 +650,7 @@ A versão Android deverá funcionar no próprio celular, sem cadastro, servidor,
 | Abastecimento | Valor pago + **preço do litro _ou_ quantos litros**. O app calcula o que faltar |
 | Casas decimais | No máximo **2 casas depois da vírgula**. Aceitar decimal com ponto ou vírgula e valores brasileiros colados com separador de milhar, sem alterar seu significado |
 | Combustível no lucro | Pelos **abastecimentos informados**: o valor pago sai do lucro do dia em que ele abasteceu |
-| Meta | Diária e mensal. Textos usados: "Faltam R$ X", "Meta atingida" ou "Meta atingida · R$ X acima" |
+| Meta | Só diária; vale do dia em que mudou em diante. Textos usados: "Faltam R$ X", "Meta atingida" ou "Meta atingida · R$ X acima" |
 | Animação da meta | Fiorino numa estrada animada que anda até a linha de chegada. Ao bater a meta, ela cruza a linha e sai confete (seção 5) |
 | Relatórios | Dia, semana, mês e período personalizado de até 6 meses; seleção de dois dias para somar e comparar; gráfico de lucro por dia e bloco de combustível |
 | Semana | Segunda-feira às 00:00 até domingo às 23:59, incluindo todo o último minuto, no horário local do celular |
@@ -723,7 +737,7 @@ Fretes e despesas são registrados separadamente, um por vez. A ordem de cadastr
 - **Metas**: "18 de 24 dias trabalhados com meta atingida" e lucro médio por dia trabalhado.
 - **Conta do período**, com as outras despesas por categoria.
 - **Combustível no período**: total gasto, nº de abastecimentos, litros, preço médio por litro, % do valor dos fretes que foi para o tanque e km rodados.
-- No mês: **meta mensal com a mesma estrada animada** e gráfico **Combustível nos últimos 6 meses**.
+- No mês: gráfico **Combustível nos últimos 6 meses** (sem meta mensal).
 - **Rendimento por km/hora:** fica somente na calculadora de viagem. Como os fretes e despesas do diário são independentes, os relatórios não atribuem custos a fretes específicos nem dividem o lucro total pelos km ou minutos de uma amostra incompleta.
 - **Dia**: conta do dia, lista de lançamentos editável e botão para anotar naquele dia.
 - **Copiar resumo para o WhatsApp**: texto pronto com fretes, combustível, despesas, lucro e metas.
@@ -735,14 +749,14 @@ Fretes e despesas são registrados separadamente, um por vez. A ordem de cadastr
 - Dias agrupados por mês, com o lucro de cada mês no cabeçalho.
 - Cada dia mostra: lucro, nº de fretes, se abasteceu, e um ponto verde quando a meta foi atingida. O texto acompanha, porque a cor nunca é a única informação.
 - Tocar no dia abre o relatório daquele dia para conferir ou corrigir.
-- A edição de qualquer viagem antiga continua disponível sem limite de tempo. Conferir um dia ou terminar uma semana ou mês não bloqueia alterações. Uma correção recalcula todos os períodos afetados, preservando a meta válida em cada data.
-- Uma marca opcional **Dia conferido** registra que o motorista revisou as contas. Não bloqueia a edição; qualquer alteração posterior naquele dia pede nova conferência.
+- A edição de qualquer viagem antiga continua disponível sem limite de tempo. Terminar uma semana ou mês não bloqueia alterações. Uma correção recalcula todos os períodos afetados, preservando a meta válida em cada data.
+- Não há marca de "dia conferido" (retirada em 30/10/2026).
 
 #### 3.7 Ajustes
 
 <img src="img/12-ajustes.png" width="300" alt="Ajustes">
 
-- Meta diária, meta mensal, consumo (km/l) e preço do litro.
+- Meta diária, consumo (km/l) e preço do litro.
 - Tamanho da letra: **A / A+ / A++**, além de respeitar o tamanho de fonte do Android.
 - Na versão Android, esta tela também concentra: fazer cópia, restaurar cópia, exportar para planilha e bloqueio por biometria (opcional).
 - Mostrar a data da última cópia e um lembrete semanal dentro do aplicativo. A senha da cópia é opcional. Essa é uma função local do app, não uma automação do ChatGPT.
@@ -852,9 +866,8 @@ R$/hora              = sobra ÷ horas      (omitido sem tempo)
 
 - R$/km e R$/hora são resultados exclusivos da simulação de uma viagem. Os relatórios do período mostram os totais efetivamente cadastrados, sem ratear despesas entre fretes.
 - **Meta diária atingida** quando o lucro do dia ≥ meta. Contam só os dias trabalhados, ou seja, com pelo menos um frete.
-- **Meta mensal**: lucro do mês comparado com a meta daquele mês. Ao alterar, aplicar ao mês escolhido e preservar os demais meses.
 - A nova **meta diária** vale a partir da data escolhida, por padrão hoje, e não substitui a meta válida nos dias anteriores. Relatórios consultam a meta da respectiva data, não a configuração atual.
-- Corrigir lançamentos antigos muda os resultados daquele período; isso é diferente de substituir sua meta histórica. Dias conferidos continuam editáveis.
+- Corrigir lançamentos antigos muda os resultados daquele período; isso é diferente de substituir sua meta histórica.
 
 #### Números
 
@@ -891,7 +904,7 @@ flowchart TD
 - As telas observam a mesma base (`Flow` do Room). Nenhuma tela guarda totais próprios.
 - Gráficos e a estrada animada em **Compose Canvas**, sem biblioteca paga nem serviço externo.
 
-#### Modelo de dados (Room, versão 1)
+#### Modelo de dados (Room, versão 2)
 
 Implementado em `app/.../data/Entidades.kt`; esquema exportado em `app/schemas/`.
 
@@ -902,9 +915,7 @@ Implementado em `app/.../data/Entidades.kt`; esquema exportado em `app/schemas/`
 | `conta_versao` | `contaId` + `desde` (AAAA-MM, chave), `nome`, `valor`, `dia` original, `ativa`, `categoria`, `fim?` |
 | `ocorrencia` | `contaId` + `mes` (chave: única por conta e mês), `status` (PREVISTA / GERADA / PULADA), `lancamentoId?`, exceção do mês (`altData`, `altValor`, `altDescricao`, `altCategoria`) |
 | `meta_diaria` | `desde` (chave), `valor` |
-| `meta_mensal` | `mes` (chave), `valor` |
-| `dia` | `data`, `revisao`, `conferida?` (revisão no momento da conferência) |
-| `ajuste` | pares chave/valor: consumo, preço manual (data, valor, carimbo), meta mensal base |
+| `ajuste` | pares chave/valor: consumo e preço manual (data, valor, carimbo) |
 
 Os detalhes de cada tipo ficaram como colunas opcionais da própria tabela `lancamento`, em vez de tabelas separadas: é mais simples e não cria nenhuma coluna que ligue gasto a frete. Tamanho da letra e data da última cópia ficam no DataStore (preferências do aparelho). Gravações em transação, IDs estáveis e migrações versionadas; sem atualização destrutiva.
 
@@ -972,7 +983,7 @@ FretesHumberto/
 │     ├─ Modelo.kt              (Lancamento, Metas, textoMeta)
 │     ├─ Calculos.kt            (Relatorio.resumir, Calculadora, Combustivel)
 │     ├─ Recorrencias.kt        (contas do mês, vencimento, geração idempotente)
-│     ├─ Diario.kt              (salvar, apagar, desfazer, conferir — vira transação Room)
+│     ├─ Diario.kt              (salvar, apagar, desfazer — vira transação Room)
 │     └─ Estrada.kt             (posição da van, confete, curva, borrão das rodas)
 ├─ app/                         (Android: Compose + Material 3)
 │  └─ src/main/kotlin/io/github/fomes1574/freteshumberto/
@@ -1002,7 +1013,7 @@ FretesHumberto/
 | v1 | Desfazer exclusão e proteção contra toque duplo |
 | v1 | **Contas do mês**: cadastro de despesas recorrentes independentes, sem tratamento de investimentos |
 | v1 | Calculadora exclusivamente para simulações, sem gravar frete ou despesa no diário |
-| v1 | Meta mensal por mês de referência, metas diárias com vigência e comparação de períodos equivalentes |
+| v1 | Meta diária com vigência (sem meta mensal) e comparação de períodos equivalentes |
 | v1 | Data da última cópia, senha opcional e lembrete semanal dentro do app |
 | v1 | Corrigir interpretação de dinheiro, edição de duração, referência de preço e falhas silenciosas de gravação |
 | v2 | Exportar resumo mensal em CSV/PDF |
@@ -1045,7 +1056,7 @@ FretesHumberto/
 20. Simular, limpar ou fechar a calculadora não cria nem altera nenhum lançamento, lucro, meta ou relatório.
 21. Cadastrar despesa mensal gera uma ocorrência por mês, sem duplicação ao reabrir ou restaurar; mês pulado continua pulado.
 22. Colar `R$ 1.234,56` mantém o valor R$ 1.234,56. Editar somente a descrição de uma viagem de 17 minutos preserva os 17 minutos.
-23. Atualizar meta mensal afeta apenas o mês escolhido; atualizar a diária preserva as vigências anteriores.
+23. Atualizar a meta diária vale do dia em que mudou em diante e preserva a meta dos dias anteriores.
 24. Comparar uma semana parcial usa os mesmos dias da semana anterior. Registrar abastecimento antigo não substitui indevidamente o preço mais recente.
 
 A revisão do protótipo inclui 32 testes automatizados das regras e verificações na interface de lançamentos, edição antiga, filtros, metas, recorrência, calculadora, restauração com senha e letra ampliada. A conta do item 1 e a independência do item 19 também foram conferidas na interface. O relatório [design-qa.md](../design-qa.md) distingue os testes realizados e as limitações. Todos os critérios aplicáveis precisam ser repetidos no app Android; o item 12 depende de APK e não foi testado. O salvamento físico do arquivo de backup e o uso offline precisam de conferência no aparelho final.
@@ -1109,11 +1120,9 @@ Os nomes finais podem variar, preservando invariantes e migrações. Não existe
 | Detalhe de abastecimento | Chave do lançamento; litros em centésimos, preço em centavos, modo de entrada |
 | Detalhe de despesa | Chave do lançamento e categoria; origem recorrente opcional, nunca freteId |
 | Meta diária | Data de início única e valor; consultar maior vigência ≤ data |
-| Meta mensal | Mês de referência único e valor; definir base inicial explicitamente |
 | Recorrência | ID e início; versões mantêm nome, valor, dia original, atividade e fim |
 | Versão da recorrência | Recorrência+mês de vigência únicos; preservar versões anteriores |
 | Ocorrência mensal | Recorrência+mês únicos, status, lançamento opcional e exceção individual; mês pulado persistente |
-| Revisão/conferência de dia | Data, revisão atual, revisão conferida e timestamp; alteração invalida marca |
 | Referência manual do combustível | Preço, data financeira e timestamp para desempate; não reescreve abastecimentos |
 
 Detalhes técnicos podem ter cascade ao seu próprio lançamento. **Nunca criar cascade de frete para despesa/abastecimento.** Ocorrência mensal deve continuar representando um mês pulado mesmo depois de excluir a despesa associada.
@@ -1130,7 +1139,7 @@ Data financeira é `LocalDate`/conversor equivalente, não timestamp UTC à meia
 
 - [x] Projeto Gradle com `:core` (Kotlin/JVM) e `:app` (Android/Compose), catálogo de versões e wrapper do Gradle 9.3.0.
 - [x] SDK mínimo 26, target/compile 36, `applicationId` `io.github.fomes1574.freteshumberto` (DECISOES.md).
-- [x] Regras portadas para Kotlin em `core/`: dinheiro, datas, resumo do período, metas, calculadora, combustível, preço de referência, contas do mês, diário (salvar/apagar/desfazer/conferir) e regras da estrada.
+- [x] Regras portadas para Kotlin em `core/`: dinheiro, datas, resumo do período, metas, calculadora, combustível, preço de referência, contas do mês, diário (salvar/apagar/desfazer) e regras da estrada.
 - [x] 39 testes JUnit em `core/src/test` com os mesmos casos do protótipo, **todos passando** no Gradle (`./gradlew :core:test`).
 - [x] Esqueleto do app: quatro abas com ícone e texto, tema bege/verde, Atkinson Hyperlegible em `res/font`, ícone adaptativo com a Fiorino, backup do Google configurado.
 - [x] Workflow do GitHub Actions: testes + APK debug a cada push; APK release assinado quando houver Secrets.
@@ -1145,11 +1154,11 @@ Data financeira é `LocalDate`/conversor equivalente, não timestamp UTC à meia
 
 #### 2. Banco e operações
 
-- [x] Entidades, DAO, índices e esquema exportado do Room (versão 1 em `app/schemas/`, conferido pelo CI). Lançamento numa tabela só, com colunas opcionais por tipo e **nenhuma coluna que ligue gasto a frete**.
+- [x] Entidades, DAO, índices e esquema exportado do Room (versão 2 em `app/schemas/`, conferido pelo CI). Lançamento numa tabela só, com colunas opcionais por tipo e **nenhuma coluna que ligue gasto a frete**.
 - [x] Salvar/editar/excluir/desfazer e revisão dos dias: `data/Repositorio.kt` lê o estado, aplica a regra do `:core` e grava só a diferença (`core/Estado.kt`, `Mudancas`), tudo numa transação.
 - [x] Mover frete sem mexer nos gastos e falha de gravação sem falso sucesso: testes `RepositorioTest` (Robolectric) e `FluxosTest`; a tela só mostra "Salvo" depois da gravação.
 - [x] IDs preservados; sem `fallbackToDestructiveMigration`. Lista `MIGRACOES` pronta para a versão 2.
-- [ ] Primeira migração real (quando o esquema mudar): escrever `Migration(1, 2)` e teste com `MigrationTestHelper`.
+- [x] Primeira migração real: `MIGRACAO_1_2` (30/10/2026) tira meta mensal e conferência, com teste (`MigracaoTest`) que abre um banco da versão 1 e confere os dados.
 
 **Saída:** operações testadas na JVM com Room em memória; totais sempre derivados do banco.
 
@@ -1282,7 +1291,7 @@ A fixture fictícia de restauração está em `tests/fixtures/restauracao-teste.
 - [ ] Executar viradas de dia/semana/mês e troca de fuso com relógio controlado.
 - [ ] Testar filtros em meses de duração diferente, dias 29–31 e dados de anos anteriores.
 - [ ] Testar exportar, localizar e restaurar o arquivo físico com/sem senha; cancelamento, senha incorreta e arquivo inválido.
-- [x] Conferir restauração de metas, versões de recorrência, exceções e conferências, não só fretes (`AppTest`, `RepositorioTest`, na JVM).
+- [x] Conferir restauração de metas, versões de recorrência e exceções, não só fretes (`AppTest`, `RepositorioTest`, na JVM).
 - [ ] Atualizar APK por cima com a mesma assinatura, mantendo dados.
 - [ ] Modo avião, processo encerrado, aparelho reiniciado e período sem abrir o app.
 - [ ] Letra A++, escala Android, TalkBack, teclado aberto e área de toque.
@@ -1453,6 +1462,16 @@ Documento-fonte: [CHANGELOG.md](../CHANGELOG.md)
 
 
 ## Histórico de alterações
+
+### 30/10/2026 (noite) — Só meta diária, dia de Brasília e correção da atualização das telas
+
+- **Meta mensal retirada de tudo** (Ajustes, Relatórios, resumo do WhatsApp, banco e cópia). Fica só a meta diária: mudar vale para o dia em que mudou e os seguintes; dias passados mantêm a meta que tinham.
+- **"Dia conferido" retirado** (Hoje, Relatórios, Histórico, banco e cópia).
+- **Virada do dia às 00:00 de Brasília** (`America/Sao_Paulo`), mesmo com o celular em outro fuso; o app troca o dia sozinho se estiver aberto à meia-noite.
+- **Correção:** ao mudar a meta para R$ 300, a tela Hoje continuava com R$ 250 e os Ajustes voltavam para R$ 250. A meta era gravada, mas as telas só se atualizavam quando mudava um lançamento. Agora qualquer mudança (meta, consumo, preço, contas do mês) aparece na hora.
+- Banco versão 2 com migração 1→2 (apaga só meta mensal e conferência). Cópia de segurança versão 2; ainda lê a versão 1.
+- Nome no celular: **Meus Fretes**. APK com link direto em Releases → "Meus Fretes" (`MeusFretes.apk`), publicado a cada atualização do `main`, com a mesma chave de depuração para instalar por cima.
+- Testes novos: migração do banco, virada à meia-noite de Brasília, meta mudada às 23:30, e telas de meta, consumo/preço na calculadora, abastecimento por litros, corrigir lançamento, conta futura com pausar/pular e relatórios.
 
 ### 30/10/2026 (tarde) — App Android: banco, telas, contas e cópia
 

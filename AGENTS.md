@@ -14,8 +14,8 @@ Instruções explícitas do usuário prevalecem. Para decisões de produto, use 
 2. Combustível sai do diário pelos abastecimentos cadastrados. A estimativa fica só na calculadora isolada, que não grava lançamentos.
 3. Não reintroduzir recebimento pendente, CDB/investimentos ou classificação de rentabilidade.
 4. Datas financeiras locais sem horário. Semana segunda inclusiva até a próxima segunda exclusiva. Sem relatórios por hora; duração opcional em minutos continua permitida.
-5. Filtro de seis meses não apaga histórico nem impede editar lançamentos antigos. Conferir dia não bloqueia edição.
-6. Preservar metas históricas. Meta mensal pertence ao mês de referência.
+5. Filtro de seis meses não apaga histórico nem impede editar lançamentos antigos. O dia vira às 00:00 de Brasília.
+6. Só existe meta diária: vale do dia em que mudou em diante e preserva a meta dos dias passados. Não reintroduzir meta mensal nem "dia conferido" (retirados em 30/10/2026).
 7. Recorrência idempotente, única por conta+mês. Respeitar mês pulado, versões e exceções. Fevereiro usa dia 28 para vencimentos 29–31, inclusive bissexto: é decisão deliberada.
 8. Não adicionar backend, login, analytics, IA no produto, API paga ou dependência de internet. Linguagem curta, comum e centrada nos valores.
 9. Nunca versionar dados financeiros reais, cópias pessoais, chaves ou credenciais. A fixture existente é fictícia e documentada.

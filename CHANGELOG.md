@@ -1,5 +1,15 @@
 # Histórico de alterações
 
+## 30/10/2026 (noite) — Só meta diária, dia de Brasília e correção da atualização das telas
+
+- **Meta mensal retirada de tudo** (Ajustes, Relatórios, resumo do WhatsApp, banco e cópia). Fica só a meta diária: mudar vale para o dia em que mudou e os seguintes; dias passados mantêm a meta que tinham.
+- **"Dia conferido" retirado** (Hoje, Relatórios, Histórico, banco e cópia).
+- **Virada do dia às 00:00 de Brasília** (`America/Sao_Paulo`), mesmo com o celular em outro fuso; o app troca o dia sozinho se estiver aberto à meia-noite.
+- **Correção:** ao mudar a meta para R$ 300, a tela Hoje continuava com R$ 250 e os Ajustes voltavam para R$ 250. A meta era gravada, mas as telas só se atualizavam quando mudava um lançamento. Agora qualquer mudança (meta, consumo, preço, contas do mês) aparece na hora.
+- Banco versão 2 com migração 1→2 (apaga só meta mensal e conferência). Cópia de segurança versão 2; ainda lê a versão 1.
+- Nome no celular: **Meus Fretes**. APK com link direto em Releases → "Meus Fretes" (`MeusFretes.apk`), publicado a cada atualização do `main`, com a mesma chave de depuração para instalar por cima.
+- Testes novos: migração do banco, virada à meia-noite de Brasília, meta mudada às 23:30, e telas de meta, consumo/preço na calculadora, abastecimento por litros, corrigir lançamento, conta futura com pausar/pular e relatórios.
+
 ## 30/10/2026 (tarde) — App Android: banco, telas, contas e cópia
 
 - **Banco (etapa 2):** Room versão 1 com esquema exportado e conferido pelo CI. Lançamento numa tabela só, sem coluna que ligue gasto a frete. Ocorrência única por conta+mês e índice único em `lancamento.ocorrencia`. `Repositorio` grava cada operação numa transação, só com o que mudou; falha desfaz tudo e a tela não mostra "Salvo".

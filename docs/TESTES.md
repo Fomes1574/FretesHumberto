@@ -69,7 +69,7 @@ A fixture fictícia de restauração está em `tests/fixtures/restauracao-teste.
 - [ ] Executar viradas de dia/semana/mês e troca de fuso com relógio controlado.
 - [ ] Testar filtros em meses de duração diferente, dias 29–31 e dados de anos anteriores.
 - [ ] Testar exportar, localizar e restaurar o arquivo físico com/sem senha; cancelamento, senha incorreta e arquivo inválido.
-- [x] Conferir restauração de metas, versões de recorrência, exceções e conferências, não só fretes (`AppTest`, `RepositorioTest`, na JVM).
+- [x] Conferir restauração de metas, versões de recorrência e exceções, não só fretes (`AppTest`, `RepositorioTest`, na JVM).
 - [ ] Atualizar APK por cima com a mesma assinatura, mantendo dados.
 - [ ] Modo avião, processo encerrado, aparelho reiniciado e período sem abrir o app.
 - [ ] Letra A++, escala Android, TalkBack, teclado aberto e área de toque.

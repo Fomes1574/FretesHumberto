@@ -55,7 +55,9 @@ Sem rede, ainda dá para trabalhar no `:core` (Kotlin puro) e no protótipo. Nã
 
 - Pacote base `io.github.fomes1574.freteshumberto`. Regras em `.core`, nunca dentro de Composable ou ViewModel.
 - Dinheiro em `Long` (centavos), litros e km em centésimos (`Long`), duração em minutos (`Int`), datas financeiras em `LocalDate`. Nada de `Double` para dinheiro.
-- Cada operação do `Diario` (salvar, apagar, restaurar, conferir, gerar contas) = **uma transação Room**.
+- Cada operação do `Diario` (salvar, apagar, restaurar, gerar contas) = **uma transação Room**.
+- "Hoje" é sempre `Datas.hoje(relogio)`: vira às 00:00 de Brasília. Não usar `LocalDate.now()` direto.
+- Telas observam `Repositorio.estado`, que tem um sinal por tabela. Tabela nova? Acrescente o sinal dela no `FretesDao` e no `combine`.
 - Sem `fallbackToDestructiveMigration`. Esquema exportado em `app/schemas/` e versionado; o CI falha se o esquema gerado não estiver no Git (o log mostra o arquivo para copiar).
 - Mudou uma tabela? Suba `version` em `BancoFretes`, acrescente a `Migration` em `MIGRACOES` e um teste.
 - Textos da interface em português simples, curtos, sem julgamento ("compensa", "ruim"). Ícone sempre com texto.
