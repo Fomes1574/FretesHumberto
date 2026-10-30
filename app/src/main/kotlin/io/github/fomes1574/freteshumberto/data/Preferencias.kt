@@ -1,17 +1,14 @@
 package io.github.fomes1574.freteshumberto.data
 
 import android.content.Context
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.preferences.preferencesDataStoreFile
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.Instant
-
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "preferencias")
 
 /** Tamanho da letra dos Ajustes, por cima do tamanho de fonte do Android. */
 enum class TamanhoLetra(val escala: Float, val rotulo: String) {
@@ -25,7 +22,8 @@ enum class TamanhoLetra(val escala: Float, val rotulo: String) {
  * de combustível ficam no banco porque entram nas contas e na cópia de segurança.
  */
 class Preferencias(context: Context) {
-    private val store = context.applicationContext.dataStore
+    /** Uma instância por aplicativo (criada uma vez em FretesApplication). */
+    private val store = PreferenceDataStoreFactory.create { context.applicationContext.preferencesDataStoreFile("preferencias") }
 
     val letra: Flow<TamanhoLetra> = store.data.map { p -> TamanhoLetra.entries.getOrElse(p[LETRA] ?: 0) { TamanhoLetra.NORMAL } }
 

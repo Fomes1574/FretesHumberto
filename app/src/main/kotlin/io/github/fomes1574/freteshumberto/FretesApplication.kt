@@ -14,6 +14,7 @@ class FretesApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        ContasWorker.agendar(this)
+        // Se o agendador não puder ser iniciado, a abertura do app continua gerando as contas.
+        runCatching { ContasWorker.agendar(this) }
     }
 }
