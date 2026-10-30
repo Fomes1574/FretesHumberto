@@ -9,5 +9,7 @@ kotlin {
 }
 
 dependencies {
+    // Só a biblioteca JSON (sem plugin de compilador): a cópia monta e valida o JSON à mão.
+    implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.junit)
 }

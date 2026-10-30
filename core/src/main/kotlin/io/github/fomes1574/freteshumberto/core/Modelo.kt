@@ -7,8 +7,10 @@ enum class Tipo { FRETE, ABASTECIMENTO, DESPESA }
 
 enum class ModoAbastecimento { PRECO, LITROS }
 
-/** Categorias de "Outra despesa". "Outros" é o padrão. */
-val CATEGORIAS = listOf("Pedágio", "Manutenção", "Estacionamento", "Lavagem", "Multa", "Outros")
+/** Categorias de "Outra despesa" (mesma lista do protótipo). "Conta mensal" é a das contas do mês. */
+val CATEGORIAS = listOf("Pedágio", "Manutenção", "Estacionamento", "Lavagem", "Multa", "Conta mensal", "Outros")
+
+const val CATEGORIA_CONTA = "Conta mensal"
 
 /**
  * Um lançamento do diário. Os três tipos são independentes (R01): nenhum frete

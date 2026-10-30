@@ -58,6 +58,17 @@ data class Diario(
         return copy(lancamentos = lancamentos + r.lancamento, ocorrencias = occ, revisoes = tocar(r.lancamento.data, revisoes))
     }
 
+    /**
+     * Retira o lançamento sem marcar o mês como pulado. Usado pelas contas do mês quando
+     * a ocorrência volta a ser só prevista (ex.: alteração para uma data futura).
+     */
+    fun removerSemPular(id: String): Diario {
+        val l = lancamentos.firstOrNull { it.id == id } ?: return this
+        return copy(lancamentos = lancamentos.filter { it.id != id }, revisoes = tocar(l.data, revisoes))
+    }
+
+    fun comOcorrencia(o: Ocorrencia): Diario = copy(ocorrencias = ocorrencias + (o.chave to o))
+
     fun conferir(d: LocalDate): Diario = copy(conferidos = conferidos + (d to (revisoes[d] ?: 0)))
 
     /** Conferido e sem alterações depois da conferência. Conferir nunca bloqueia edição. */

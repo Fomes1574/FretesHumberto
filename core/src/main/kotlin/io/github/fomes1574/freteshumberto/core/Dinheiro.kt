@@ -80,6 +80,16 @@ object Dinheiro {
         if (v.startsWith(',')) v = "0$v"
         return v
     }
+
+    /**
+     * Novo texto de um campo de valor. Um valor brasileiro colado com milhar ("R$ 1.234,56")
+     * vira "1234,56" sem mudar o valor; o resto passa por [filtrarDigitacao].
+     */
+    fun campo(texto: String): String {
+        val colado = texto.contains("R$") || (texto.contains('.') && texto.contains(','))
+        if (colado) parse(texto)?.let { return Formato.paraCampo(it) }
+        return filtrarDigitacao(texto)
+    }
 }
 
 /** Formatação em português do Brasil, sem depender de Locale do aparelho. */
