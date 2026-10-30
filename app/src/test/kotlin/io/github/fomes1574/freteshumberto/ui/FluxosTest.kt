@@ -9,7 +9,13 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.test.core.app.ApplicationProvider
+import io.github.fomes1574.freteshumberto.FretesApplication
 import io.github.fomes1574.freteshumberto.MainActivity
+import io.github.fomes1574.freteshumberto.core.Estado
+import io.github.fomes1574.freteshumberto.data.TamanhoLetra
+import kotlinx.coroutines.runBlocking
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -24,6 +30,16 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 class FluxosTest {
     @get:Rule val tela = createAndroidComposeRule<MainActivity>()
+
+    /** Cada teste começa com o banco vazio e letra normal (o arquivo do banco sobrevive entre testes). */
+    @Before fun limpar() {
+        val app = ApplicationProvider.getApplicationContext<FretesApplication>()
+        runBlocking {
+            app.repositorio.substituirTudo(Estado())
+            app.preferencias.mudarLetra(TamanhoLetra.NORMAL)
+        }
+        esperar("R$ 0,00")
+    }
 
     private fun existe(texto: String, parte: Boolean = false) = tela.onAllNodesWithText(texto, substring = parte).fetchSemanticsNodes().isNotEmpty()
 
