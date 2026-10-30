@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- Ícone temático (Android 13+): silhueta da van numa cor só. -->
+    <group android:translateX="27" android:translateY="43.5" android:scaleX="0.54" android:scaleY="0.54">
+        <path android:fillColor="#FF000000" android:pathData="M4,41 L3,10 Q3,5 8,5 L60,4.5 Q64,4.5 66,7 L77,19 Q79,21 83,21.8 L93,23.5 Q98,24.5 98.5,29 L99,37 Q99,41 95,41Z M11,43 a9,9 0 1,0 18,0 a9,9 0 1,0 -18,0Z M73,43 a9,9 0 1,0 18,0 a9,9 0 1,0 -18,0Z"/>
+    </group>
+</vector>

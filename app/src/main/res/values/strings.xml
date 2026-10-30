@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Meus Fretes</string>
+    <string name="aba_hoje">Hoje</string>
+    <string name="aba_historico">Histórico</string>
+    <string name="aba_relatorios">Relatórios</string>
+    <string name="aba_ajustes">Ajustes</string>
+</resources>

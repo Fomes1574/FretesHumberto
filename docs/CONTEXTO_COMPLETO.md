@@ -1,6 +1,6 @@
 # Meus Fretes — contexto completo para programação
 
-> Consolidação de 30/10/2026. Projeto e protótipo web; Android ainda não implementado.
+> Consolidação de 30/10/2026. Protótipo web pronto; Android em construção (`:core` com regras e testes, `:app` em esqueleto).
 > Arquivo gerado por `scripts/build_context.py`. Edite os documentos-fonte e regenere; não mantenha uma segunda especificação manual aqui.
 
 Esta cópia reúne objetivo, instruções, regras, decisões, estado, arquitetura, plano, testes e histórico. Instruções atuais do usuário prevalecem. Os links apontam para as fontes mantidas no repositório.
@@ -15,13 +15,16 @@ Documento-fonte: [README.md](../README.md)
 
 Controle simples de fretes, abastecimentos, despesas e metas para um motorista Android com pouca familiaridade com tecnologia. O foco é anotar os valores e ver quanto sobrou no dia, com histórico e relatórios fáceis de consultar.
 
-**Situação em 30/10/2026: projeto e protótipo web. O aplicativo Android ainda não foi implementado. Não há APK.** O código atual usa HTML/JavaScript e armazenamento no navegador. Kotlin, Compose, Room e WorkManager são a arquitetura prevista.
+**Situação em 30/10/2026: protótipo web pronto e app Android com as funções principais.** Banco, telas, contas do mês e cópia de segurança estão no `app/` e passam nos testes do CI, que gera o APK debug. **Ainda não foi testado num celular nem há APK assinado para o motorista.** Para programar com o Claude Code, comece pelo [CLAUDE.md](../CLAUDE.md).
+
+[![Android](https://github.com/Fomes1574/FretesHumberto/actions/workflows/android.yml/badge.svg)](https://github.com/Fomes1574/FretesHumberto/actions/workflows/android.yml)
 
 ### Documentação
 
 | Necessidade | Documento |
 |---|---|
 | Um único MD com o contexto inteiro | [CONTEXTO_COMPLETO.md](CONTEXTO_COMPLETO.md) |
+| Começar a programar com o Claude Code | [CLAUDE.md](../CLAUDE.md) |
 | Instruções para IA de programação | [AGENTS.md](../AGENTS.md) |
 | Contrato das regras financeiras | [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md) |
 | Telas, design e arquitetura Android prevista | [ARQUITETURA.md](ARQUITETURA.md) |
@@ -29,6 +32,8 @@ Controle simples de fretes, abastecimentos, despesas e metas para um motorista A
 | Etapas de desenvolvimento Android | [PLANO_ANDROID.md](PLANO_ANDROID.md) |
 | Testes e limites da validação | [TESTES.md](TESTES.md) e [design-qa.md](../design-qa.md) |
 | Decisões e alterações | [DECISOES.md](DECISOES.md) e [CHANGELOG.md](../CHANGELOG.md) |
+| Chave do APK e como lançar versão | [CHAVE_ASSINATURA.md](CHAVE_ASSINATURA.md) |
+| Ideias de outros apps (aguardando aprovação) | [MELHORIAS_PESQUISADAS.md](MELHORIAS_PESQUISADAS.md) |
 
 ### Regras essenciais
 
@@ -57,7 +62,18 @@ Abra o endereço indicado pelo servidor na porta 4173. `docs/mobile.html` aprese
 
 Os dados iniciais são **fictícios**. “Começar do zero” permite testar sem os exemplos. Os registros ficam no `localStorage` desse navegador e podem desaparecer ao limpar seus dados. Não use o protótipo como único registro financeiro.
 
-### Testes e geração
+### Android
+
+JDK 17 e Android Studio (ou só o SDK). Na raiz:
+
+```sh
+./gradlew :core:test            # regras de negócio em Kotlin, sem Android
+./gradlew :app:assembleDebug    # APK debug em app/build/outputs/apk/debug/
+```
+
+O GitHub Actions roda os testes e gera o APK debug a cada push (aba **Actions** → artefato `meus-fretes-debug`). O APK para o celular do motorista sai assinado na página **Releases** quando uma tag `v*` é enviada — veja [CHAVE_ASSINATURA.md](CHAVE_ASSINATURA.md).
+
+### Testes e geração do protótipo
 
 Node 22+ e Python 3. Não precisa instalar dependências para rodar os testes existentes ou gerar o HTML usando o bundle de criptografia já incluído:
 
@@ -80,9 +96,9 @@ Edite `src/` e regenere `docs/prototipo.html`. O gerador aproveita CSS, ícones,
 
 ### Situação dos testes
 
-Os 32 testes automatizados passam. A interface foi revisada no navegador em 29/10/2026, incluindo restauração com senha e letra ampliada. **Nenhum teste Android físico, build de APK ou migração Room foi realizado.** O salvamento físico do arquivo de backup não foi confirmado na automação e precisa de teste completo no aparelho. A recorrência atual funciona ao abrir/retomar a página, sem execução com navegador fechado.
+Os 32 testes automatizados passam. A interface foi revisada no navegador em 29/10/2026, incluindo restauração com senha e letra ampliada. No Android, os testes rodam na JVM (regras, banco e fluxos de tela com Robolectric) e o APK debug é gerado no CI; **nenhum teste em celular foi feito**. O salvamento físico do arquivo de backup não foi confirmado na automação e precisa de teste completo no aparelho. A recorrência atual funciona ao abrir/retomar a página, sem execução com navegador fechado.
 
-Não há publicação automática, workflow de build, integração com a Lalamove ou serviços de nuvem. Exportação CSV/PDF, biometria, manutenção por km e sincronização ainda não foram implementadas.
+O workflow de build roda a cada push e está verde. Não há integração com a Lalamove nem serviços de nuvem. Exportação CSV/PDF, biometria, manutenção por km e sincronização ainda não foram implementadas.
 
 ### Organização
 
@@ -94,11 +110,94 @@ Não há publicação automática, workflow de build, integração com a Lalamov
 | `src/build.py` | Geração do HTML final |
 | `src/backup-crypto.js` e bundle | Proteção de cópia também sem WebCrypto |
 | `tests/` | Testes e fixture fictícia |
+| `core/` | Regras do app Android em Kotlin puro, com testes |
+| `app/` | App Android (Compose + Room): telas, banco, contas do mês e cópia de segurança |
 | `docs/img/` | Referências visuais originais, anteriores às correções |
 | `docs/LICENCAS/` | Licenças dos componentes incorporados |
 | `scripts/build_context.py` | Gera o MD de contexto completo |
 
-O objetivo continua sendo custo zero. GitHub Actions para o APK futuro depende dos limites e permissões vigentes da conta; não é uma etapa já configurada nem uma garantia de disponibilidade. O protótipo atual não depende desse serviço.
+O objetivo continua sendo custo zero. O GitHub Actions já gera o APK debug; o uso depende dos limites e permissões vigentes da conta, sem garantia de disponibilidade. O protótipo atual não depende desse serviço.
+
+---
+
+Documento-fonte: [CLAUDE.md](../CLAUDE.md)
+
+
+## Meus Fretes — guia para o Claude Code
+
+@AGENTS.md
+
+As regras acima (AGENTS.md) valem integralmente. Este arquivo acrescenta o caminho rápido para começar.
+
+### Em uma frase
+
+App Android offline para um motorista de Fiorino de 52 anos anotar fretes, abastecimentos e despesas e ver o lucro do dia, com metas, relatórios e a estrada animada da Fiorino. O protótipo web (`docs/prototipo.html`) é a referência de comportamento e visual.
+
+### Onde estamos
+
+- **Etapas 1 a 5 do [PLANO_ANDROID.md](PLANO_ANDROID.md) com código pronto e testado na JVM** (30/10/2026): banco Room, telas, contas do mês com WorkManager, cópia de segurança. CI verde (66 testes no `:core`, 17 no `:app`) gera o APK debug.
+- **Nada foi conferido num celular ainda.** As caixas `[ ]` que sobram são, quase todas, testes no aparelho e a etapa 6 (chave de assinatura, instalação, piloto).
+- A próxima tarefa é sempre a primeira caixa `[ ]` do PLANO_ANDROID.md.
+- Decisões técnicas fechadas: [docs/DECISOES.md](DECISOES.md) → "Decisões técnicas fechadas em 30/10/2026". Não reabrir.
+
+### Comandos
+
+```sh
+./gradlew :core:test                      # regras (rápido, sem Android)
+./gradlew :app:testDebugUnitTest          # testes JVM do app
+./gradlew :app:assembleDebug              # APK debug em app/build/outputs/apk/debug/
+./gradlew :app:installDebug               # instala no emulador/celular conectado
+npm test                                  # 32 testes do protótipo web (Node 22+)
+```
+
+Antes de dizer que algo está pronto: `./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug` verde.
+
+### Se estiver rodando na nuvem (Claude Code na web)
+
+O build Android baixa dependências de fora. Se o Gradle falhar com erro de conexão/403, peça ao usuário para liberar estes domínios em **claude.ai → Configurações → Capabilities** (ou rode localmente com o Android Studio instalado):
+
+`services.gradle.org`, `downloads.gradle.org`, `plugins.gradle.org`, `dl.google.com`, `maven.google.com`, `repo.maven.apache.org`, `repo1.maven.org`
+
+Sem rede, ainda dá para trabalhar no `:core` (Kotlin puro) e no protótipo. Não invente que o build passou.
+
+### Mapa rápido
+
+| Preciso de… | Vá em |
+|---|---|
+| Regra de negócio (contrato) | `docs/REGRAS_DE_NEGOCIO.md` |
+| Como a regra já está codificada | `core/src/main/kotlin/.../core/` (Dinheiro, Datas, Modelo, Calculos, Recorrencias, Diario, Contas, Estado, Copia, Textos, Estrada) |
+| Banco e gravação | `app/.../data/` (`Repositorio` faz cada operação numa transação) |
+| Telas | `app/.../ui/` (uma pasta por tela; `FretesApp` liga tudo; `FretesViewModel`) |
+| Casos de teste de referência | `core/src/test/.../RegrasTest.kt`, `AppTest.kt` e `tests/regras.test.cjs` |
+| Testes do app (Robolectric) | `app/src/test/.../data/RepositorioTest.kt` e `ui/FluxosTest.kt` |
+| Visual (cores, tamanhos, telas) | `docs/ARQUITETURA.md` §3–5 + `docs/prototipo.html` + `docs/img/` |
+| Tema Compose pronto | `app/.../ui/theme/Tema.kt` (cores, Atkinson Hyperlegible, tipografia) |
+| Versões das bibliotecas | `gradle/libs.versions.toml` |
+| Ideias de outros apps (não aprovadas) | `docs/MELHORIAS_PESQUISADAS.md` |
+| Chave/APK release | `docs/CHAVE_ASSINATURA.md` |
+
+### Convenções do código Android
+
+- Pacote base `io.github.fomes1574.freteshumberto`. Regras em `.core`, nunca dentro de Composable ou ViewModel.
+- Dinheiro em `Long` (centavos), litros e km em centésimos (`Long`), duração em minutos (`Int`), datas financeiras em `LocalDate`. Nada de `Double` para dinheiro.
+- Cada operação do `Diario` (salvar, apagar, restaurar, conferir, gerar contas) = **uma transação Room**.
+- Sem `fallbackToDestructiveMigration`. Esquema exportado em `app/schemas/` e versionado; o CI falha se o esquema gerado não estiver no Git (o log mostra o arquivo para copiar).
+- Mudou uma tabela? Suba `version` em `BancoFretes`, acrescente a `Migration` em `MIGRACOES` e um teste.
+- Textos da interface em português simples, curtos, sem julgamento ("compensa", "ruim"). Ícone sempre com texto.
+- Tamanhos em `sp` (respeitam a fonte do Android). Áreas de toque ≥ 48 dp; ações principais 56–68 dp.
+- Valor final do lucro aparece na hora; só a van anima. Regras da cena em `core/Estrada.kt`.
+- Sem permissões novas no manifesto sem aprovação do usuário.
+
+### Como trabalhar uma etapa
+
+1. Leia a etapa no PLANO_ANDROID.md e as regras que ela toca.
+2. Escreva/porte primeiro os testes; depois o código.
+3. Rode os comandos acima. Se algo não puder ser verificado (ex.: sem emulador), diga isso.
+4. Marque as caixas `[x]` concluídas no PLANO_ANDROID.md, atualize ESTADO_ATUAL.md e CHANGELOG.md.
+5. Rode `python3 scripts/build_context.py` para regenerar o contexto completo.
+6. Commits pequenos e em português, um assunto por commit.
+
+Comandos prontos: `/proxima-etapa` e `/conferir` (em `.claude/commands/`).
 
 ---
 
@@ -109,9 +208,9 @@ Documento-fonte: [AGENTS.md](../AGENTS.md)
 
 ### Situação e leitura
 
-Projeto em fase de planejamento, com protótipo HTML funcional e arquitetura Android prevista. Não há módulo Android, Gradle wrapper, APK ou banco Room nesta revisão. Não descreva decisões planejadas como funções entregues.
+Protótipo HTML funcional e app Android em construção (desde 30/10/2026): módulos `:core` e `:app` com banco Room, telas, contas do mês e cópia de segurança, testados na JVM pelo GitHub Actions, que gera o APK debug. O app ainda não foi aberto num celular nem assinado, e não há APK publicado. Não descreva como pronto o que não foi testado no aparelho.
 
-Leia: `README.md`, `docs/REGRAS_DE_NEGOCIO.md`, `docs/ESTADO_ATUAL.md`, `docs/ARQUITETURA.md`, `docs/PLANO_ANDROID.md` e `docs/TESTES.md`. `docs/CONTEXTO_COMPLETO.md` reúne esses documentos automaticamente; não é uma segunda especificação para editar à mão.
+Leia: `CLAUDE.md` (atalhos), `README.md`, `docs/REGRAS_DE_NEGOCIO.md`, `docs/ESTADO_ATUAL.md`, `docs/ARQUITETURA.md`, `docs/PLANO_ANDROID.md` e `docs/TESTES.md`. `docs/CONTEXTO_COMPLETO.md` reúne esses documentos automaticamente; não é uma segunda especificação para editar à mão.
 
 Instruções explícitas do usuário prevalecem. Para decisões de produto, use as regras e o registro de decisões; para funcionamento implementado, confira código e testes. Divergência do código é pendência, não autorização para alterar a regra. Imagens antigas e o template original não substituem os requisitos.
 
@@ -137,6 +236,8 @@ Instruções explícitas do usuário prevalecem. Para decisões de produto, use 
 - `src/backup-crypto.bundle.js`: bundle gerado; manter fonte e lockfile coerentes ao alterar dependências.
 - `src/prototipo-check.js`: temporário para checar sintaxe, não versionar.
 - `docs/img/`: referências originais, não capturas dos novos fluxos.
+- `core/`: regras em Kotlin puro, espelho de `src/core.js`. Mudou uma regra? Mude e teste nos dois, ou registre a divergência.
+- `app/`: Android. Só UI, ViewModels, Room e integrações; nada de cálculo financeiro aqui.
 
 Preservar Atkinson Hyperlegible, bege/verde, quatro abas e estrada/Fiorino. Ajustes de legibilidade são permitidos; nova direção visual depende de pedido do usuário.
 
@@ -146,7 +247,7 @@ Após alterar regras/código: `npm test`. Após alterar fontes do HTML: `npm run
 
 Para documentação, conferir links locais, coerência entre implementado/previsto e executar `python3 scripts/build_context.py`. Não inventar APK, meses de uso real, testes no celular ou confirmação de download.
 
-Antes de programar Android, seguir `docs/PLANO_ANDROID.md`. Portar o comportamento, não a estrutura de localStorage. Regras financeiras fora da UI; transações e migrações Room; mesmos casos de referência em Kotlin. O modelo Android do documento é proposta, não migração pronta.
+Antes de programar Android, seguir `docs/PLANO_ANDROID.md` (próxima tarefa = primeira caixa `[ ]`). Regras novas ou alteradas vão primeiro para `core/` com teste. Portar o comportamento, não a estrutura de localStorage. Regras financeiras fora da UI; transações e migrações Room; mesmos casos de referência em Kotlin. O modelo Android do documento é proposta, não migração pronta.
 
 Na entrega, relatar mudanças, testes realmente executados, limitações e pendências. Modificar documentos/protótipo não equivale a concluir o aplicativo Android.
 
@@ -330,11 +431,42 @@ Consolidação em 30/10/2026. As regras atuais estão em [REGRAS_DE_NEGOCIO.md](
 | Custo | Zero para o projeto | Sem API/serviço pago obrigatório |
 | Plataforma final | Kotlin/Compose/Room, offline | HTML é referência, não substituição silenciosa por WebView |
 
+### Decisões técnicas fechadas em 30/10/2026
+
+Tomadas pelo usuário para iniciar o Android. Não reabrir sem pedido dele.
+
+| Tema | Decisão | Por quê / consequência |
+|---|---|---|
+| Valor na tela Hoje | **Valor final aparece na hora**; só a van anima | Fácil de conferir. Não reintroduzir contagem numérica |
+| `minSdk` | **26** (Android 8.0) | Cobre praticamente todos os aparelhos em uso; habilita ícone adaptativo e `java.time` sem desugaring. Conferir a versão do celular do motorista antes do piloto |
+| `targetSdk` / `compileSdk` | **36** (Android 16) | Requisito atual de API para apps; limite máximo do AGP 9.0. Subir para 37 junto com AGP 9.1.1+ numa etapa própria |
+| `applicationId` | **`io.github.fomes1574.freteshumberto`** | Definitivo: trocar depois impede atualizar por cima. Debug usa sufixo `.debug` e pode ficar instalado junto |
+| Backup automático do Google | **Ligado** (`allowBackup=true`, regras em `res/xml`) | Banco e preferências voltam ao trocar de celular, se o backup da conta Google estiver ativo. A cópia manual `.fretes` continua obrigatória no app |
+| Dados do protótipo | **Não usar o protótipo com dados reais.** O Android começa do zero | A etapa 5 não precisa importar cópias do protótipo. Se algum dia for necessário, tratar como migração explícita e testada |
+| Arquitetura de módulos | `:core` (Kotlin/JVM puro) + `:app` (Android) | Regras testáveis em segundos, sem emulador; o app só consome |
+| Toolchain | AGP 9.0.1 (Kotlin embutido), Gradle 9.3.0, Kotlin 2.3.20, KSP 2.3.5, Compose BOM 2026.03.00, Room 2.8.4, DataStore 1.2.1, JDK 17 | Combinação compatível com compileSdk 36, conferida nas notas oficiais. Fonte: `gradle/libs.versions.toml` |
+| Build do APK | GitHub Actions (repositório público) + Android Studio local | Workflow em `.github/workflows/android.yml`. APK de release assinado só com Secrets configurados |
+| Assinatura | Uma chave para sempre, fora do Git, em duas cópias | Passo a passo em [CHAVE_ASSINATURA.md](CHAVE_ASSINATURA.md) |
+
+### Escolhas de implementação (30/10/2026, tarde)
+
+Feitas ao construir as etapas 2 a 5. Podem mudar com migração, sem reabrir as regras.
+
+| Tema | Escolha | Motivo |
+|---|---|---|
+| Tabela de lançamentos | Uma tabela `lancamento` com colunas opcionais por tipo | Mais simples que tabelas de detalhe e não cria coluna que ligue gasto a frete |
+| Gravação | Repositório lê o estado, aplica a regra do `:core` e grava só a diferença, numa transação | As regras ficam num lugar só e testáveis; falha desfaz tudo |
+| Duplicidade de contas | Chave conta+mês em `ocorrencia` e índice único em `lancamento.ocorrencia`; inserir nunca "atualiza por cima" | O banco recusa duplicar mesmo se o agendador e a abertura rodarem juntos |
+| Formato da cópia Android | JSON `meus-fretes` versão 1, montado e validado à mão (`core/Copia.kt`) | Não lê cópias do protótipo (decisão de 30/10/2026); parâmetros de senha iguais aos do protótipo |
+| Restaurar | Antes de trocar, guarda os dados atuais numa cópia interna sem senha; Ajustes oferece "Voltar aos dados de antes da restauração" | Substitui a cópia preventiva baixada do protótipo |
+| Formulários | Telas inteiras por cima das abas, em vez de folhas deslizantes | Mais estáveis com teclado aberto e letra grande |
+| Testes do app | Robolectric (SDK 35) na JVM, no GitHub Actions | Sem emulador no CI; não substitui o teste no celular |
+
 ### O que continua sendo escolha técnica de implementação
 
-Não falta nova decisão sobre fretes e despesas. Ainda será necessário registrar: versões compatíveis das ferramentas Android, SDK mínimo/target, applicationId, esquema/migrações finais, política de backup do sistema, formato/migração de cópia Android e estratégia de build disponível na conta. Essas escolhas não justificam reabrir regras já decididas.
+Esquema Room final e migrações, formato da cópia Android (DTO versionado) e detalhes de UI dentro da direção visual existente. Essas escolhas não justificam reabrir regras já decididas.
 
-Melhorias futuras, como sincronização, devem aparecer como proposta separada com impacto em custo e simplicidade; não acrescentar ao escopo atual automaticamente.
+Melhorias futuras, como sincronização, devem aparecer como proposta separada com impacto em custo e simplicidade; não acrescentar ao escopo atual automaticamente. As propostas inspiradas em outros apps estão em [MELHORIAS_PESQUISADAS.md](MELHORIAS_PESQUISADAS.md) e só entram quando o usuário aprovar.
 
 ---
 
@@ -343,26 +475,44 @@ Documento-fonte: [docs/ESTADO_ATUAL.md](ESTADO_ATUAL.md)
 
 ## Estado atual e mapa do código
 
-Revisão documental: 30/10/2026. Código funcional proveniente da atualização do protótipo de 29/10/2026. Nesta entrega ao GitHub não houve desenvolvimento de Android.
+Revisão: 30/10/2026 (tarde). Protótipo web de 29/10/2026 + **app Android com as telas, o banco, as contas do mês e a cópia de segurança**. Tudo compila e passa nos testes da JVM no GitHub Actions, que gera o APK debug. **O app ainda não foi aberto num celular**: nada do que depende do aparelho foi conferido (toque, teclado, TalkBack, arquivo físico da cópia, WorkManager rodando com o app fechado, atualização por cima).
 
 ### Implementado versus previsto
 
 | Área | Protótipo atual | Android |
 |---|---|---|
-| Hoje, Histórico, Relatórios, Ajustes | Implementados em HTML/JS | Pendente |
-| Fretes, abastecimentos e despesas independentes | Implementados | Pendente |
-| Calculadora isolada | Implementada, sem gravação no diário | Pendente |
-| Metas por vigência/mês | Implementadas | Pendente |
-| Dia, semana, mês, personalizado e dois dias | Implementados | Pendente |
-| Recorrências com versões, exceções e mês pulado | Implementadas ao abrir/retomar | WorkManager e Room pendentes |
-| Gráficos e estrada/Fiorino | SVG/JS, preservando a referência visual | Compose Canvas pendente |
-| Conferência e desfazer exclusão | Implementados | Pendente |
-| Cópia validada e senha opcional | Implementadas; salvamento físico não confirmado na automação | Seletor de arquivos e recuperação pendentes |
-| Armazenamento | `localStorage` do navegador | Room e DataStore pendentes |
-| A/A+/A++ | Implementados; inspeção em largura de celular | Escala Android/TalkBack/teclado pendentes |
+| Hoje, Histórico, Relatórios, Ajustes | Implementados em HTML/JS | Implementados em Compose (`ui/`); testados na JVM, não no aparelho |
+| Fretes, abastecimentos e despesas independentes | Implementados | Implementados; banco sem coluna que ligue gasto a frete |
+| Calculadora isolada | Implementada, sem gravação no diário | Implementada com estado só da tela (`ui/lancamento/TelaCalculadora.kt`) |
+| Metas por vigência/mês | Implementadas | Implementadas; gravadas no banco (`meta_diaria`, `meta_mensal`) |
+| Dia, semana, mês, personalizado e dois dias | Implementados | Implementados (`ui/relatorios/`, `core/Textos.kt`) |
+| Recorrências com versões, exceções e mês pulado | Implementadas ao abrir/retomar | Implementadas: abertura do app + WorkManager a cada 12 h, mesma função idempotente |
+| Gráficos e estrada/Fiorino | SVG/JS | Compose Canvas (`ui/relatorios/Graficos.kt`, `ui/estrada/CenaEstrada.kt`) |
+| Conferência e desfazer exclusão | Implementados | Implementados (Desfazer por 6 s) |
+| Cópia validada e senha opcional | Implementadas; salvamento físico não confirmado na automação | Implementadas com o seletor de arquivos; gravação conferida lendo de volta; **não testado no aparelho** |
+| Armazenamento | `localStorage` do navegador | Room (esquema v1 versionado) + DataStore; backup do Google no manifesto |
+| A/A+/A++ | Implementados; inspeção em largura de celular | Implementados; escala do Android, TalkBack e teclado não conferidos no aparelho |
 | CSV/PDF, biometria, manutenção por km | Não implementados | Melhorias futuras |
-| APK, assinatura, CI de build, atualização instalada | Não existem | Pendentes |
+| APK, assinatura, CI de build, atualização instalada | Não existem | APK debug pelo CI; release assinado preparado (falta criar a chave e os Secrets); atualização por cima não testada |
 | Backend, login, IA, integração Lalamove | Fora do escopo | Não implementar sem mudança de escopo |
+
+### Mapa do código Android
+
+| Pasta / arquivo | O que tem |
+|---|---|
+| `core/.../Dinheiro.kt`, `Datas.kt`, `Modelo.kt`, `Calculos.kt` | Dinheiro em centavos, datas, metas, resumo do período, calculadora, combustível |
+| `core/.../Diario.kt`, `Recorrencias.kt`, `Contas.kt` | Salvar/apagar/desfazer/conferir; geração e ações das contas do mês |
+| `core/.../Estado.kt` | Estado completo e `Mudancas` (o que gravar entre dois estados) |
+| `core/.../Copia.kt` | Formato `.fretes` (JSON versão 1), validação, senha AES-GCM/PBKDF2 |
+| `core/.../Textos.kt` | Datas em português, filtro de relatório, comparação, resumo do WhatsApp, histórico, lembrete |
+| `core/.../Estrada.kt` | Posição da van, confete, curva, borrão das rodas |
+| `app/.../data/` | Entidades e DAO do Room, `BancoFretes`, `Repositorio` (transações), `Preferencias` (DataStore) |
+| `app/.../contas/ContasWorker.kt` | WorkManager das contas do mês |
+| `app/.../backup/ArquivosCopia.kt` | Ler/gravar o arquivo escolhido e a cópia interna antes da restauração |
+| `app/.../ui/` | `FretesApp` (abas, telas por cima, avisos, restauração), `FretesViewModel` e uma pasta por tela |
+| `app/schemas/` | Esquema do banco exportado pelo Room (o CI falha se não estiver no Git) |
+
+Formato da cópia Android: `{"formato":"meus-fretes","versao":1,...}`; com senha, envelope `meus-fretes-cifrado` com `kdf`, `iteracoes`, `sal`, `iv` e `dados` em base64. **Não é o formato do protótipo**: o Android não lê cópias do protótipo (decisão de 30/10/2026).
 
 ### Fonte do protótipo
 
@@ -437,7 +587,7 @@ A fixture `tests/fixtures/restauracao-teste.fretes` contém somente dados fictí
 - O lucro final aparece imediatamente; a cena da estrada continua animada. Não reintroduzir contagem numérica que dificulte conferir o saldo só para igualar uma imagem antiga.
 - O gráfico atual mostra uma linha de meta quando todas as metas do intervalo são iguais. Representar mudanças de meta dentro do gráfico é refinamento ainda pendente; os totais usam as vigências corretas.
 - Relatórios continuam mostrando km anotados como referência, sem converter isso em lucro/km de uma amostra parcial.
-- Modelo Room, política de backup do Android, assinatura, permissão de arquivos, teclado e acessibilidade física ainda precisam ser implementados e testados.
+- No Android: modelo Room, política de backup e seletor de arquivos estão implementados; assinatura, teclado e acessibilidade física ainda precisam ser testados no aparelho.
 - Limites atuais de validação incluem 50 mil lançamentos, 200 recorrências e arquivo de até 10 milhões de caracteres no decodificador; a seleção limita a 10 MB. São guardas do protótipo, não política de apagar histórico. Há também guarda de 2400 iterações por recorrência. Revisar esses limites ao implementar armazenamento durável.
 
 O estado atual serve de referência de comportamento e de teste, não de justificativa para manter limitações acidentais no aplicativo definitivo.
@@ -451,7 +601,7 @@ Documento-fonte: [docs/ARQUITETURA.md](ARQUITETURA.md)
 
 Repositório: [Fomes1574/FretesHumberto](https://github.com/Fomes1574/FretesHumberto) · Android, uso familiar · consolidado em 30 de outubro de 2026
 
-> **Situação:** projeto em fase de planejamento. As imagens abaixo vêm de um **protótipo web navegável** (`docs/prototipo.html`) usado para validar o design com o motorista. Ainda não existe app Android, APK ou teste feito no celular. Os valores mostrados são fictícios. O protótipo foi atualizado com as regras desta revisão; as imagens em `docs/img/` são referências visuais da versão original e não documentam todos os novos fluxos.
+> **Situação (30/10/2026):** o app Android tem banco, telas, contas do mês e cópia de segurança, testados na JVM pelo GitHub Actions, que gera o APK debug. **Ainda não foi aberto num celular nem assinado.** As imagens abaixo vêm do **protótipo web navegável** (`docs/prototipo.html`) usado para validar o design com o motorista. Os valores mostrados são fictícios. O protótipo foi atualizado com as regras desta revisão; as imagens em `docs/img/` são referências visuais da versão original e não documentam todos os novos fluxos.
 
 ---
 
@@ -609,6 +759,7 @@ Fretes e despesas são registrados separadamente, um por vez. A ordem de cadastr
 | Negativo | Vermelho `#A9221B`, sempre com sinal de menos (−) |
 | Botões | Pelo menos 48 dp; ações principais com 60–68 dp; cantos arredondados de 14–18 dp |
 | Ícones | Sempre acompanhados de texto nas ações |
+| Ícone do app | Fiorino branca em movimento sobre estrada, sol e céu verde; versão monocromática para ícones temáticos. Arquivos `res/drawable/ic_launcher_*.xml`; prévia em `img/13-icone.png` |
 
 ---
 
@@ -636,7 +787,7 @@ Fretes e despesas são registrados separadamente, um por vez. A ordem de cadastr
 | Abrir o app | A van sai do início e anda até a posição do lucro atual |
 | Lançar um frete abaixo da meta | A van **arranca, acelera e freia** até a nova posição. A estrada corre mais rápido que a van e as rodas giram na mesma velocidade |
 | Bater a meta | A van **atravessa a linha de chegada** e estaciona do outro lado. Ao cruzar, sai **confete** da bandeira, que cai e fica no asfalto por ~5 s |
-| Lançar valores **acima da meta** | **Só o número sobe.** A van e a estrada ficam paradas |
+| Lançar valores **acima da meta** | O número mostra o **valor final na hora**. A van e a estrada ficam paradas |
 | Apagar ou corrigir e ficar **abaixo da meta** | A van **dá ré**, atravessa a linha de volta e para na posição certa. A estrada e as rodas andam ao contrário e não há confete |
 | Trocar de aba e voltar | Nenhuma animação se nada mudou |
 | "Reduzir movimento" ligado no Android | A van vai direto à posição final, sem animação nem confete |
@@ -738,22 +889,22 @@ flowchart TD
 - As telas observam a mesma base (`Flow` do Room). Nenhuma tela guarda totais próprios.
 - Gráficos e a estrada animada em **Compose Canvas**, sem biblioteca paga nem serviço externo.
 
-#### Modelo de dados
+#### Modelo de dados (Room, versão 1)
+
+Implementado em `app/.../data/Entidades.kt`; esquema exportado em `app/schemas/`.
 
 | Tabela | Campos principais |
 |---|---|
-| `lancamento` | `id`, `tipo` (frete / abastecimento / despesa), `data`, `valorCentavos`, `descricao`, `criadoEm`, `editadoEm` |
-| `frete_detalhe` | `lancamentoId`, `km?`, `minutos?`; sem vínculo com despesas |
-| `abastecimento_detalhe` | `lancamentoId`, `litros` (2 casas), `precoLitroCentavos`, `modoEntrada` (preço / litros) |
-| `despesa_detalhe` | `lancamentoId`, `categoria`, `recorrenciaId?`; sem chave para frete |
-| `meta` | `tipo` (dia / mês), `valorCentavos`, `vigenteDesde`, `mesReferencia?` para meta mensal |
-| `config_carro` | `kmPorLitro`, `precoLitroPadrao`, `vigenteDesde` |
-| `recorrencia` | `id`, `inicio`; dados financeiros e atividade em versões por mês de vigência |
-| `recorrencia_versao` | `recorrenciaId`, `vigenteDesdeMes`, `descricao`, `valorCentavos`, `diaOriginal`, `categoria`, `fim`, `ativa`; combinação recorrência + vigência única |
-| `ocorrencia_mensal` | `recorrenciaId` + `mês` (únicos juntos), `dataAjustada`, `valorCentavos`, `status` (prevista / gerada / pulada), `lancamentoId?`, exceção individual opcional |
-| `conferencia_dia` | `data`, `conferidoEm`, referência da versão dos lançamentos; alterações posteriores pedem nova conferência |
+| `lancamento` | `id`, `tipo` (FRETE / ABASTECIMENTO / DESPESA), `data` (AAAA-MM-DD), `valor` (centavos), `descricao`; opcionais por tipo: `kmCentesimos`, `minutos`, `litrosCentesimos`, `precoLitro`, `modoAbastecimento`, `categoria`, `ocorrencia` (única); `criadoEm`, `editadoEm`. Índice por `data` |
+| `conta` | `id`, `inicio` |
+| `conta_versao` | `contaId` + `desde` (AAAA-MM, chave), `nome`, `valor`, `dia` original, `ativa`, `categoria`, `fim?` |
+| `ocorrencia` | `contaId` + `mes` (chave: única por conta e mês), `status` (PREVISTA / GERADA / PULADA), `lancamentoId?`, exceção do mês (`altData`, `altValor`, `altDescricao`, `altCategoria`) |
+| `meta_diaria` | `desde` (chave), `valor` |
+| `meta_mensal` | `mes` (chave), `valor` |
+| `dia` | `data`, `revisao`, `conferida?` (revisão no momento da conferência) |
+| `ajuste` | pares chave/valor: consumo, preço manual (data, valor, carimbo), meta mensal base |
 
-Este é o modelo Android proposto, não um banco já criado. Detalhamento de unidades, índices e etapas em [PLANO_ANDROID.md](PLANO_ANDROID.md). Gravações em transação, IDs estáveis e migrações versionadas; não usar atualização destrutiva.
+Os detalhes de cada tipo ficaram como colunas opcionais da própria tabela `lancamento`, em vez de tabelas separadas: é mais simples e não cria nenhuma coluna que ligue gasto a frete. Tamanho da letra e data da última cópia ficam no DataStore (preferências do aparelho). Gravações em transação, IDs estáveis e migrações versionadas; sem atualização destrutiva.
 
 Não existe relacionamento frete–despesa no banco. A calculadora não grava nessas tabelas. Excluir um frete afeta só esse registro e seus detalhes técnicos opcionais. Despesas e abastecimentos seguem intactos. Um erro de gravação não pode exibir “Salvo”; uma falha de leitura não pode substituir os dados por exemplos.
 
@@ -806,25 +957,34 @@ Somente para ver os mesmos dados em dois celulares ao mesmo tempo, por exemplo o
 
 ---
 
-### 10. Estrutura sugerida do repositório
+### 10. Estrutura do repositório
+
+Criada em 30/10/2026. O `:core` tem as regras, a cópia e os textos, com testes; o `:app` tem banco, telas, agendador e cópia.
 
 ```
 FretesHumberto/
-├─ app/
-│  └─ src/main/java/.../fretes/
-│     ├─ data/        (Room: entidades, DAOs, banco, migrações)
-│     ├─ domain/      (cálculos: lucro, metas, combustível, médias)
-│     ├─ ui/
-│     │  ├─ hoje/  historico/  relatorios/  ajustes/
-│     │  ├─ lancamento/   (frete, abasteci, despesa, calculadora)
-│     │  └─ estrada/      (cena animada da meta)
-│     └─ backup/      (exportar / restaurar)
-├─ docs/
-│  ├─ ARQUITETURA.md  (este arquivo)
-│  ├─ prototipo.html  (protótipo navegável)
-│  └─ img/
-├─ .github/workflows/build.yml
-└─ .gitignore
+├─ core/                        (Kotlin puro, sem Android — ./gradlew :core:test)
+│  └─ src/main/kotlin/.../core/
+│     ├─ Dinheiro.kt            (parse, arredondamento, filtro de digitação, Formato)
+│     ├─ Datas.kt               (semana seg–dom, mês, período, comparação, 6 meses)
+│     ├─ Modelo.kt              (Lancamento, Metas, textoMeta)
+│     ├─ Calculos.kt            (Relatorio.resumir, Calculadora, Combustivel)
+│     ├─ Recorrencias.kt        (contas do mês, vencimento, geração idempotente)
+│     ├─ Diario.kt              (salvar, apagar, desfazer, conferir — vira transação Room)
+│     └─ Estrada.kt             (posição da van, confete, curva, borrão das rodas)
+├─ app/                         (Android: Compose + Material 3)
+│  └─ src/main/kotlin/io/github/fomes1574/freteshumberto/
+│     ├─ MainActivity.kt
+│     ├─ ui/FretesApp.kt        (abas, telas por cima, avisos, restauração)
+│     ├─ ui/theme/Tema.kt       (cores, Atkinson Hyperlegible, tipografia)
+│     ├─ data/                  (Room, DAO, repositório com transações, DataStore)
+│     ├─ ui/hoje/ historico/ relatorios/ ajustes/ lancamento/ contas/ estrada/ comum/
+│     ├─ contas/                (WorkManager das contas do mês)
+│     └─ backup/                (arquivo .fretes pelo seletor do Android)
+├─ docs/                        (regras, decisões, plano, protótipo)
+├─ src/ tests/                  (protótipo web e seus 32 testes Node)
+├─ .github/workflows/android.yml
+└─ CLAUDE.md / AGENTS.md
 ```
 
 ---
@@ -845,6 +1005,7 @@ FretesHumberto/
 | v1 | Corrigir interpretação de dinheiro, edição de duração, referência de preço e falhas silenciosas de gravação |
 | v2 | Exportar resumo mensal em CSV/PDF |
 | v2 | Manutenção e troca de óleo por km |
+| v1.1+ | Melhorias inspiradas em outros apps: ver [MELHORIAS_PESQUISADAS.md](MELHORIAS_PESQUISADAS.md) |
 | Futuro | Sincronização entre dois celulares (seção 8) |
 
 #### Regras já definidas para as contas do mês (v1)
@@ -864,7 +1025,7 @@ FretesHumberto/
 2. Calculadora com R$ 80,00, 40 km, 8 km/l, R$ 4,00/l e 1,5 h → combustível R$ 20,00, sobra R$ 60,00, **R$ 1,50/km** e **R$ 40,00/h**. *(Conferido no protótipo.)*
 3. Abasteci com R$ 200,00 e preço R$ 3,70 → **54,05 L**. Com R$ 200,00 e 54,05 L → **R$ 3,70/L**. *(Conferido no protótipo.)*
 4. Digitar `54.0599` num campo decimal resulta em `54,05`. *(Conferido no protótipo.)*
-5. Lucro acima da meta → só o número sobe: a posição da van e da estrada não muda. *(Medido no protótipo.)*
+5. Lucro acima da meta → o valor final aparece na hora e a posição da van e da estrada não muda. *(Medido no protótipo; regra em `core/Estrada.kt`.)*
 6. Apagar um frete e ficar abaixo da meta → a van volta à posição proporcional, sem confete. *(Medido no protótipo.)*
 7. Cruzar a meta → a van termina depois da linha e o confete aparece uma única vez.
 8. Salvar com toque duplo cria um único lançamento.
@@ -917,13 +1078,13 @@ Documento-fonte: [docs/PLANO_ANDROID.md](PLANO_ANDROID.md)
 
 ## Plano de implementação Android
 
-**Proposta técnica, ainda não implementada.** Os requisitos do produto já estão definidos em [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md). Esta sequência organiza a construção sem ampliar o escopo ou pressupor APK existente.
+**Em andamento desde 30/10/2026.** O código das etapas 1 a 5 está pronto e testado na JVM (GitHub Actions). Falta tudo o que depende de um celular: abrir o APK, conferir telas e cópia no aparelho, assinar e fazer o piloto (etapa 6). Os requisitos do produto já estão definidos em [REGRAS_DE_NEGOCIO.md](REGRAS_DE_NEGOCIO.md). Esta sequência organiza a construção sem ampliar o escopo ou pressupor APK existente.
 
 ### Direção
 
 Kotlin, Jetpack Compose/Material 3, ViewModels, Room, DataStore e WorkManager. Um aplicativo local, com regras testáveis fora da UI e sem backend. Uma aplicação/módulo inicial é suficiente; não criar microserviços ou dividir em muitos módulos sem necessidade.
 
-Escolher versões estáveis compatíveis do toolchain no início da implementação, registrar no catálogo de versões e manter wrapper/lockfiles apropriados. Não usar um número de versão imaginado nesta documentação como evidência de compatibilidade.
+Versões escolhidas e registradas em `gradle/libs.versions.toml` (motivo em [DECISOES.md](DECISOES.md)). Se o primeiro sync falhar por uma versão, trocar pela estável compatível mais próxima e registrar a troca; não mudar a combinação inteira sem necessidade.
 
 | Camada | Responsabilidade |
 |---|---|
@@ -963,58 +1124,73 @@ Data financeira é `LocalDate`/conversor equivalente, não timestamp UTC à meia
 
 #### 1. Base e domínio
 
-- Criar projeto Android, configuração reproduzível e quatro destinos de navegação.
-- Implementar/parser monetário, intervalos, cálculos, vigências e simulador em Kotlin.
-- Portar os exemplos Node para testes Kotlin, com resultados exatos em centavos.
-- Registrar SDK mínimo/target, ID do aplicativo e versões escolhidas. São decisões técnicas ainda não fixadas nesta entrega.
+**Já feito (30/10/2026):**
 
-**Saída:** testes de domínio passam; nenhum servidor ou IA é necessário.
+- [x] Projeto Gradle com `:core` (Kotlin/JVM) e `:app` (Android/Compose), catálogo de versões e wrapper do Gradle 9.3.0.
+- [x] SDK mínimo 26, target/compile 36, `applicationId` `io.github.fomes1574.freteshumberto` (DECISOES.md).
+- [x] Regras portadas para Kotlin em `core/`: dinheiro, datas, resumo do período, metas, calculadora, combustível, preço de referência, contas do mês, diário (salvar/apagar/desfazer/conferir) e regras da estrada.
+- [x] 39 testes JUnit em `core/src/test` com os mesmos casos do protótipo, **todos passando** no Gradle (`./gradlew :core:test`).
+- [x] Esqueleto do app: quatro abas com ícone e texto, tema bege/verde, Atkinson Hyperlegible em `res/font`, ícone adaptativo com a Fiorino, backup do Google configurado.
+- [x] Workflow do GitHub Actions: testes + APK debug a cada push; APK release assinado quando houver Secrets.
+
+**Falta para fechar a etapa 1:**
+
+- [x] Primeiro `./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug` verde no GitHub Actions (30/10/2026, PR #1): testes do `:core` no Gradle e APK debug gerado.
+- [ ] Abrir o APK debug num emulador/celular e ver as quatro abas.
+- [x] Nenhuma versão precisou de ajuste: a combinação de `libs.versions.toml` compilou de primeira.
+
+**Saída:** testes de domínio passam no Gradle; APK debug abre; nenhum servidor ou IA é necessário.
 
 #### 2. Banco e operações
 
-- Criar entidades, DAOs, índices e esquema exportado do Room.
-- Implementar salvar/editar/excluir/desfazer e revisão dos dias, com transações.
-- Cobrir mover frete entre datas sem mexer nos gastos e falha de gravação sem falso sucesso.
-- Preservar IDs e definir migrações. Não usar fallback destrutivo para resolver divergência.
+- [x] Entidades, DAO, índices e esquema exportado do Room (versão 1 em `app/schemas/`, conferido pelo CI). Lançamento numa tabela só, com colunas opcionais por tipo e **nenhuma coluna que ligue gasto a frete**.
+- [x] Salvar/editar/excluir/desfazer e revisão dos dias: `data/Repositorio.kt` lê o estado, aplica a regra do `:core` e grava só a diferença (`core/Estado.kt`, `Mudancas`), tudo numa transação.
+- [x] Mover frete sem mexer nos gastos e falha de gravação sem falso sucesso: testes `RepositorioTest` (Robolectric) e `FluxosTest`; a tela só mostra "Salvo" depois da gravação.
+- [x] IDs preservados; sem `fallbackToDestructiveMigration`. Lista `MIGRACOES` pronta para a versão 2.
+- [ ] Primeira migração real (quando o esquema mudar): escrever `Migration(1, 2)` e teste com `MigrationTestHelper`.
 
-**Saída:** operações e migrações testadas; totais derivados de uma única base.
+**Saída:** operações testadas na JVM com Room em memória; totais sempre derivados do banco.
 
 #### 3. Telas e acessibilidade
 
-- Reproduzir Hoje, Histórico, Relatórios e Ajustes conforme o protótipo vigente.
-- Formulários simples; somente detalhes adicionais sob expansão. Teclado decimal, data clara, foco e retorno corretos.
-- Relatórios equivalentes, seleção de dois dias, valores textuais e gráficos com metas históricas.
-- Cena Fiorino em Canvas, com redução de movimento e sem redesenho contínuo em repouso.
-- Testar letra ampliada, Android font scale, TalkBack, teclado aberto e telas pequenas.
+- [x] Hoje, Histórico, Relatórios e Ajustes seguindo o protótipo vigente (`ui/`), mais Contas do mês, formulários e calculadora como telas por cima das abas.
+- [x] Formulários simples, "Mais detalhes" para km e duração, teclado decimal, atalhos Hoje/Ontem e calendário sem datas futuras, proteção contra toque duplo.
+- [x] Relatórios de dia, semana, mês, período (até 6 meses) e dois dias, com comparação equivalente, gráfico por dia com meta, valores em texto, combustível e 6 meses.
+- [x] Cena da Fiorino em Canvas (`ui/estrada/CenaEstrada.kt`) com as regras de `core/Estrada.kt`, confete, borrão das rodas e sem animação com "Remover animações" ligado.
+- [x] Letra A/A+/A++ por cima da fonte do Android; ícones sempre com texto; descrições para leitor de tela nos botões de ícone, gráficos e cena.
+- [x] Fluxos principais testados na JVM (`FluxosTest`, Robolectric + Compose).
+- [ ] Conferir no aparelho: letra A++ com fonte grande do Android, TalkBack, teclado aberto, tela pequena, cortes de texto.
 
-**Saída:** conferir registros, valores, ações e navegação sem corte no aparelho.
+**Saída:** conferir registros, valores, ações e navegação sem corte **no aparelho** (pendente).
 
 #### 4. Contas do mês
 
-- Aplicar versões e exceções em transação, com índice único conta+mês.
-- Worker e abertura usam a mesma geração idempotente, sem exigir horário exato.
-- Processar atrasos após dias sem abrir; respeitar mês pulado, pausa e data final.
-- Testar concorrência entre Worker/abertura, dia 31 e fevereiro bissexto com regra de dia 28.
+- [x] Versões e exceções aplicadas em transação (`core/Contas.kt` + repositório); chave conta+mês na tabela `ocorrencia` e índice único em `lancamento.ocorrencia`.
+- [x] `contas/ContasWorker.kt` (WorkManager, a cada 12 h, sem horário exato) e a abertura/volta ao app chamam a mesma `Repositorio.gerarContas`.
+- [x] Atrasos após dias sem abrir, mês pulado, pausa, retomar só um mês e data final: testes em `AppTest` e `RepositorioTest`.
+- [x] Oito gerações simultâneas não duplicam (`RepositorioTest`); dia 31 e fevereiro bissexto no dia 28 (`RegrasTest`).
+- [ ] Ver no aparelho a conta lançada com o app fechado (Worker rodando de verdade).
 
 **Saída:** execução repetida/concorrente não duplica; histórico anterior permanece.
 
 #### 5. Cópia e restauração
 
-- Definir DTO versionado, validação completa e compatibilidade/migração do envelope do protótipo.
-- Usar seletor de arquivo Android; confirmar stream gravado antes de atualizar data da cópia.
-- Restaurar com validação e substituição transacional; se falhar, preservar banco anterior.
-- Testar senha incorreta, adulteração, formato futuro, arquivo truncado, cancelamento, pouco espaço e restauração de todas as versões/exceções.
-- Configurar política explícita de backup/transferência do sistema Android; banco local não garante que o sistema não faça cópia em nuvem.
+- [x] Formato `.fretes` versionado (`core/Copia.kt`, versão 1) com validação completa. Não importa cópias do protótipo (decisão de 30/10/2026).
+- [x] Seletor de arquivos do Android (`backup/ArquivosCopia.kt`); a gravação é conferida lendo o arquivo de volta antes de registrar "Última cópia".
+- [x] Restauração validada antes de trocar os dados, numa transação; antes de trocar, o app guarda os dados atuais numa cópia interna para "Voltar aos dados de antes da restauração".
+- [x] Testes de senha incorreta, adulteração, versão futura, arquivo cortado, IDs repetidos, ocorrência incoerente e restauração de versões/exceções (`AppTest`, `RepositorioTest`).
+- [x] Política de backup do Android explícita no manifesto e em `res/xml` (backup do Google ligado, decisão de 30/10/2026).
+- [ ] No aparelho: salvar no Drive/pasta/WhatsApp, localizar o arquivo e restaurar com e sem senha; cancelar o seletor; pouco espaço.
 
-**Saída:** salvar, localizar e restaurar arquivo no aparelho, com e sem senha; não basta teste criptográfico de memória.
+**Saída:** salvar, localizar e restaurar arquivo no aparelho, com e sem senha (pendente no aparelho).
 
 #### 6. Instalação e piloto
 
-- Produzir APK assinado com chave estável fora do repositório.
-- Testar instalação e atualização por cima com preservação dos dados e restauração em instalação limpa.
-- Testar uso offline, retorno após fechar processo, virada de dia/semana/mês e desempenho com histórico maior.
-- Fazer piloto com o motorista. Ajustar dificuldades observadas sem inventar métricas ou tempo de uso.
-- Documentar aparelho, versão, commit, testes reais e pendências antes de marcar versão pronta.
+- [ ] Criar a chave de assinatura e os Secrets ([CHAVE_ASSINATURA.md](CHAVE_ASSINATURA.md)); gerar o APK assinado pela tag `v0.1.0`.
+- [ ] Instalar, atualizar por cima mantendo os dados e restaurar em instalação limpa.
+- [ ] Uso offline, fechar o processo e voltar, virada de dia/semana/mês e histórico grande.
+- [ ] Piloto com o motorista. Ajustar dificuldades observadas sem inventar métricas ou tempo de uso.
+- [ ] Documentar aparelho, versão, commit, testes reais e pendências antes de marcar versão pronta.
 
 **Saída:** aceite do uso no aparelho; só então tratar como primeira versão Android.
 
@@ -1097,14 +1273,14 @@ A fixture fictícia de restauração está em `tests/fixtures/restauracao-teste.
 
 ### Pendências obrigatórias no Android
 
-- [ ] Portar os casos de referência e validar dinheiro sem ponto flutuante/overflow.
-- [ ] Testar transações, falhas de disco e migrações sem perda de dados.
-- [ ] Testar edição/deleção independente e desfazer com estado atualizado.
-- [ ] Worker e abertura simultâneos sem despesa duplicada; meses pulados persistem.
+- [x] Portar os casos de referência e validar dinheiro sem ponto flutuante/overflow (`RegrasTest`).
+- [x] Testar transações e falha no meio da gravação sem perda de dados (`RepositorioTest`). Falta: disco cheio de verdade e a primeira migração, quando houver versão 2.
+- [x] Testar edição/deleção independente e desfazer com estado atualizado (`RepositorioTest`, `FluxosTest`).
+- [x] Gerações simultâneas sem despesa duplicada; meses pulados persistem (`RepositorioTest`). Falta: Worker rodando no aparelho.
 - [ ] Executar viradas de dia/semana/mês e troca de fuso com relógio controlado.
 - [ ] Testar filtros em meses de duração diferente, dias 29–31 e dados de anos anteriores.
 - [ ] Testar exportar, localizar e restaurar o arquivo físico com/sem senha; cancelamento, senha incorreta e arquivo inválido.
-- [ ] Conferir restauração de metas, versões de recorrência, exceções e conferências, não só fretes.
+- [x] Conferir restauração de metas, versões de recorrência, exceções e conferências, não só fretes (`AppTest`, `RepositorioTest`, na JVM).
 - [ ] Atualizar APK por cima com a mesma assinatura, mantendo dados.
 - [ ] Modo avião, processo encerrado, aparelho reiniciado e período sem abrir o app.
 - [ ] Letra A++, escala Android, TalkBack, teclado aberto e área de toque.
@@ -1116,12 +1292,187 @@ A fixture fictícia de restauração está em `tests/fixtures/restauracao-teste.
 
 Informar data, commit, comando ou fluxo, esperado, observado, aparelho/ambiente e limitações. Distinguir falha do produto de limitação de teste. Não afirmar salvamento de arquivo só porque foi gerado um Blob, nem funcionamento nativo porque o teste Node passou.
 
+### Testes do app Android (30/10/2026, tarde)
+
+Rodam no GitHub Actions com `./gradlew :core:test :app:testDebugUnitTest :app:assembleDebug`. Neste ambiente de desenvolvimento o SDK Android não baixa (sem acesso ao `dl.google.com`); o `:core` foi rodado aqui também.
+
+| Suíte | Onde | O que confere |
+|---|---|---|
+| `core/.../RegrasTest.kt` (39) | JVM | Casos de referência do protótipo |
+| `core/.../AppTest.kt` (27) | JVM | Campo de valor colado, diferença gravada no banco, contas do mês (só este mês, deste mês em diante, pular, pausar, retomar um mês), filtro e textos dos relatórios, comparação, dois dias, resumo do WhatsApp, histórico, conferência, lembrete de cópia, cópia com e sem senha, senha errada, adulteração, arquivo cortado, versão futura, dados incoerentes |
+| `app/.../data/RepositorioTest.kt` (11) | Robolectric + Room em memória | Salvar e reler igual, toque duplo sem duplicar, apagar/mover frete sem mexer nos gastos, desfazer uma vez, conferência desatualizada, falha no meio desfaz tudo, 8 gerações de contas simultâneas sem duplicar, mês pulado, metas históricas, restaurar e falha na restauração mantendo os dados |
+| `app/.../ui/FluxosTest.kt` (6) | Robolectric + Compose | Abre a `MainActivity`: R$ 285 − 40 − 20 = R$ 225 com "Faltam R$ 25,00"; apagar frete mantém a despesa e Desfazer; "R$ 1.234,56" colado; calculadora sem gravar; abas e A++; conta do mês lançada |
+
+**Resultado:** verde no GitHub Actions em 30/10/2026 (run 9, commit `ac077d3`): 66 testes do `:core`, 17 do `:app`, esquema do banco conferido e APK debug gerado (artefato `meus-fretes-debug`).
+
+Robolectric roda o Android na JVM (SDK 35, tela de 411×891 dp). Ele não prova: toque real, teclado, TalkBack, desempenho, seletor de arquivos de verdade, WorkManager com o app fechado, instalação ou atualização do APK.
+
+### Testes Kotlin do módulo `:core` (30/10/2026)
+
+`core/src/test/kotlin/.../RegrasTest.kt` repete os casos do protótipo em Kotlin e acrescenta casos de formatação, preço médio, dia só com gastos, alteração "só deste mês" e regras da estrada: **39 testes, todos passando**. Foram compilados e executados com o compilador Kotlin 2.0.21 embutido no Gradle, fora do Gradle (o ambiente não tinha acesso ao Maven). Confirmado depois no GitHub Actions com Kotlin 2.3.20 (`./gradlew :core:test`, PR #1), junto com a compilação do `:app` e o APK debug.
+
+Não foram executados: testes instrumentados, emulador ou aparelho físico.
+
+
+---
+
+Documento-fonte: [docs/CHAVE_ASSINATURA.md](CHAVE_ASSINATURA.md)
+
+
+## Chave de assinatura do APK
+
+O Android só instala uma atualização **por cima** da versão anterior (sem apagar os dados) se as duas estiverem assinadas com a **mesma chave**. Perder a chave = não conseguir mais atualizar o app no celular do motorista sem desinstalar, ou seja, sem perder o banco.
+
+Faça isto **uma vez**, antes de instalar a primeira versão de verdade no celular dele.
+
+### 1. Criar a chave (no seu computador)
+
+Precisa do JDK 17 (vem com o Android Studio). No terminal:
+
+```sh
+keytool -genkeypair -v \
+  -keystore freteshumberto-release.jks \
+  -alias meusfretes \
+  -keyalg RSA -keysize 4096 \
+  -validity 36500
+```
+
+- Escolha uma senha forte e anote num gerenciador de senhas.
+- `-validity 36500` = 100 anos.
+- **Nunca** coloque o `.jks` dentro da pasta do repositório. O `.gitignore` já bloqueia `*.jks`, mas guarde fora mesmo assim.
+
+### 2. Guardar duas cópias
+
+1. Num gerenciador de senhas ou pendrive guardado em casa.
+2. Num lugar na nuvem que só você acessa (Google Drive pessoal, por exemplo).
+
+Junto da chave, guarde: senha do arquivo, alias (`meusfretes`) e senha da chave.
+
+### 3. Configurar o GitHub Actions
+
+No repositório: **Settings → Secrets and variables → Actions → New repository secret**.
+
+| Secret | Valor |
+|---|---|
+| `FRETES_KEYSTORE_BASE64` | Conteúdo do `.jks` em base64 (comando abaixo) |
+| `FRETES_KEYSTORE_PASSWORD` | Senha do arquivo |
+| `FRETES_KEY_ALIAS` | `meusfretes` |
+| `FRETES_KEY_PASSWORD` | Senha da chave |
+
+Gerar o base64:
+
+```sh
+# Linux
+base64 -w0 freteshumberto-release.jks > chave.txt
+# macOS
+base64 -i freteshumberto-release.jks -o chave.txt
+# Windows (PowerShell)
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("freteshumberto-release.jks")) > chave.txt
+```
+
+Cole o conteúdo de `chave.txt` no Secret e **apague o `chave.txt`** depois.
+
+### 4. Gerar uma versão
+
+1. Aumente `versionCode` (sempre +1) e `versionName` em `app/build.gradle.kts`.
+2. Anote a mudança no `CHANGELOG.md`.
+3. Crie a tag e envie:
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+O workflow `Android` gera `MeusFretes-v0.1.0.apk` assinado e publica na página **Releases** do repositório.
+
+### 5. Build release local (opcional)
+
+Crie `keystore.properties` na raiz do repositório (já ignorado pelo Git):
+
+```properties
+storeFile=../caminho/fora/do/repo/freteshumberto-release.jks
+storePassword=...
+keyAlias=meusfretes
+keyPassword=...
+```
+
+E rode `./gradlew :app:assembleRelease`.
+
+### Sobre o APK debug
+
+O APK debug gerado a cada push usa uma chave temporária do próprio GitHub, diferente a cada execução, e tem o ID `io.github.fomes1574.freteshumberto.debug`. Ele serve **só para testar**: instala ao lado da versão real e não atualiza por cima de outro debug gerado em outra execução. No celular do motorista, instale apenas o APK de **Releases**.
+
+---
+
+Documento-fonte: [docs/MELHORIAS_PESQUISADAS.md](MELHORIAS_PESQUISADAS.md)
+
+
+## Melhorias inspiradas em outros apps
+
+Pesquisa de 30/10/2026 em apps de controle de veículo e de ganhos de motorista (Fuelio, Drivvo, For Driver, Combustível & Custos e listas de apps para motoristas e motoboys). Objetivo: aproveitar o que funciona para quem dirige o dia todo, **sem** trazer o que contraria as regras do projeto (internet obrigatória, conta, anúncios, julgamento de "compensa ou não").
+
+**Nada aqui entra no escopo sozinho.** A v1 é a do [PLANO_ANDROID.md](PLANO_ANDROID.md). Cada item abaixo precisa de "pode fazer" do usuário antes de ser implementado; quando aprovado, mova para a tabela de Próximas etapas da [ARQUITETURA.md](ARQUITETURA.md).
+
+### Recomendadas (baixo custo, alto proveito)
+
+| # | Melhoria | Onde aparece | Como seria no Meus Fretes | Custo técnico | Versão sugerida |
+|---|---|---|---|---|---|
+| 1 | **Atalhos no ícone** (segurar o ícone → "Anotar frete", "Abasteci") | Fuelio (atalho para abastecimento rápido) | `shortcuts.xml` estático abrindo o formulário direto | Muito baixo, sem permissão | v1 (pode entrar junto da etapa 3) |
+| 2 | **Widget na tela inicial** com o lucro de hoje, a meta e botões Frete / Abasteci | Fuelio (widgets de ações rápidas e painel) | Jetpack Glance lendo o mesmo repositório; toque abre o formulário | Médio (nova dependência Glance) | v1.1 |
+| 3 | **Lembrete diário para anotar** ("Já anotou os fretes de hoje?"), num horário que ele escolhe, desligável | Lembretes do Fuelio e do Drivvo | Notificação local via WorkManager; aparece só se o dia ainda está vazio. Pede `POST_NOTIFICATIONS` no Android 13+ | Baixo | v1.1 |
+| 4 | **Busca no Histórico** por descrição/cliente ("Mudança", nome do cliente) | Fuelio (busca nos registros) | Campo de busca simples sobre a lista de dias | Baixo | v1.1 |
+| 5 | **Lembretes de manutenção por data ou km**: troca de óleo, pneus, alinhamento, licenciamento | Drivvo e Fuelio (lembretes por data ou hodômetro); Combustível & Custos | Lista "Manutenção" com próxima data/km; avisa pelo mesmo mecanismo do item 3. Já estava previsto como "manutenção por km" | Médio | v2 |
+| 6 | **Consumo real (km/l) pelo método "tanque cheio"** | Fuelio (algoritmo de tanque cheio) | No Abasteci, dois campos opcionais: hodômetro e "Enchi o tanque?". Com dois tanques cheios seguidos o app calcula o km/l real e sugere usar na calculadora | Médio | v2 |
+| 7 | **Exportar o mês em CSV/PDF** para mandar ao filho ou abrir no Excel | Fuelio (exportação CSV) | Já previsto. CSV primeiro (mais simples), PDF depois | Baixo/médio | v2 |
+| 8 | **Contas anuais** (IPVA, licenciamento, seguro anual) | Drivvo (lembretes de impostos, multas e financiamento) | Repetição "anual" nas Contas do mês, com a mesma regra idempotente | Baixo | v2 |
+
+### Avaliadas e descartadas
+
+| Ideia | Onde aparece | Por que não |
+|---|---|---|
+| Registro automático de km por GPS | Fuelio (Trip Log) | Pede localização o tempo todo e gasta bateria; contraria "sem acesso à localização" |
+| Preço de combustível e postos próximos | Fuelio, Drivvo | Depende de internet e serviço externo; o preço é o que ele digita |
+| Vários veículos e motoristas, permissões de frota | Drivvo | Um motorista, uma Fiorino: só complica a tela |
+| Sincronização em nuvem / login | Drivvo, Fuelio | Fora do escopo (DECISOES.md); o backup do Google + cópia manual cobrem a troca de celular |
+| Dois tanques / GNV | Drivvo, Fuel Manager | Não é o caso da Fiorino dele; dá para rever se ele instalar GNV |
+| Assinatura PRO, anúncios | Drivvo, Fuelio | Custo zero e sem anúncios é regra do projeto |
+| Classificar fretes em "bom/ruim" | Vários apps de motorista | Proibido pela regra R05: só números |
+
+### Fontes
+
+- Fuelio (descrição e notas de versão): widgets de ações rápidas, atalho para abastecimento, busca nos registros, lembretes por data/hodômetro, algoritmo de tanque cheio, exportação CSV, backup no Google Drive — [APKMirror](https://www.apkmirror.com/apk/sygic/fuelio-gas-log-costs), [fileplanet](https://fuelio.fileplanet.com/apk), [App Pricing Lab](https://apppricinglab.com/app/google_play/com.kajda.fuelio)
+- Drivvo: lembretes de manutenção, impostos, multas e financiamento por data ou quilometragem; receitas e despesas do motorista — [BlueStacks](https://www.bluestacks.com/campaign/br.com.ctncardoso.ctncar/es), [Androidayuda](https://en.androidayuda.com/control-car-expenses-application/)
+- For Driver, Combustível & Custos e outros: metas de ganho, rendimento mensal, alertas de manutenção — [Motonline](https://motonline.com.br/noticia/5-aplicativos-gratis-motoboy/)
+- Separar gastos do trabalho e pessoais, registrar até gastos pequenos — [Gringo](https://gringo.com.vc/controle-financeiro-para-motorista)
+
 ---
 
 Documento-fonte: [CHANGELOG.md](../CHANGELOG.md)
 
 
 ## Histórico de alterações
+
+### 30/10/2026 (tarde) — App Android: banco, telas, contas e cópia
+
+- **Banco (etapa 2):** Room versão 1 com esquema exportado e conferido pelo CI. Lançamento numa tabela só, sem coluna que ligue gasto a frete. Ocorrência única por conta+mês e índice único em `lancamento.ocorrencia`. `Repositorio` grava cada operação numa transação, só com o que mudou; falha desfaz tudo e a tela não mostra "Salvo".
+- **Telas (etapa 3):** Hoje, Histórico, Relatórios e Ajustes em Compose; formulários de frete, abastecimento e despesa; calculadora isolada; estrada da Fiorino em Canvas; gráficos de lucro por dia e combustível em 6 meses; resumo para o WhatsApp; letra A/A+/A++.
+- **Contas do mês (etapa 4):** cadastrar, só este mês, deste mês em diante, pular/retomar e pausar; WorkManager a cada 12 h e a abertura do app usam a mesma geração idempotente.
+- **Cópia (etapa 5):** arquivo `.fretes` versão 1 pelo seletor do Android, senha opcional (AES-256-GCM, PBKDF2-SHA256 210 mil), gravação conferida lendo de volta, restauração validada e transacional, cópia interna dos dados anteriores para poder voltar, lembrete semanal.
+- **Testes:** 66 no `:core` (27 novos) e 17 no `:app` (11 do repositório com Room em memória, 6 de fluxos de tela), com Robolectric. Verdes no GitHub Actions. **Nenhum teste em aparelho ou emulador.**
+- ViewModel criado por fábrica explícita com a `Application` da Activity (a fábrica padrão guardava a primeira `Application` numa variável estática e os testes de tela viam o banco de outro teste).
+- DataStore criado por instância da `Application`; agendador não derruba o app se falhar.
+
+### 30/10/2026 — Início do Android
+
+- Decisões técnicas fechadas: minSdk 26, target/compile 36, `applicationId` `io.github.fomes1574.freteshumberto`, backup automático do Google ligado, Android começa do zero (sem importar o protótipo), valor do lucro aparece na hora.
+- Projeto Gradle com módulos `:core` (Kotlin puro) e `:app` (Compose), catálogo de versões e wrapper do Gradle 9.3.0.
+- Regras portadas para Kotlin em `core/`: dinheiro, datas, resumo, metas, calculadora, combustível, preço de referência, contas do mês, diário (salvar/apagar/desfazer/conferir) e estrada da meta. 39 testes passando.
+- Esqueleto do app: quatro abas, tema bege/verde, fonte Atkinson Hyperlegible, ícone adaptativo com a Fiorino, regras de backup.
+- GitHub Actions: testes do protótipo e do Android, APK debug a cada push, APK release assinado por tag. Dependabot mensal.
+- `CLAUDE.md`, comandos `/proxima-etapa` e `/conferir`, guia da chave de assinatura e pesquisa de melhorias em outros apps.
+- Corrigida contradição na ARQUITETURA.md: acima da meta o valor final aparece na hora (sem contagem).
+- Primeiro build no GitHub Actions verde: testes do `:core` no Gradle e APK debug gerado. Ainda não aberto num aparelho.
+- Ícone redesenhado: Fiorino branca em movimento sobre estrada, com sol e céu verde; versão temática (monocromática) para Android 13+. Prévia em `docs/img/13-icone.png`.
 
 ### 30/10/2026 — Documentação e entrega no repositório
 

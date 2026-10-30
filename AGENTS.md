@@ -2,9 +2,9 @@
 
 ## Situação e leitura
 
-Projeto em fase de planejamento, com protótipo HTML funcional e arquitetura Android prevista. Não há módulo Android, Gradle wrapper, APK ou banco Room nesta revisão. Não descreva decisões planejadas como funções entregues.
+Protótipo HTML funcional e app Android em construção (desde 30/10/2026): módulos `:core` e `:app` com banco Room, telas, contas do mês e cópia de segurança, testados na JVM pelo GitHub Actions, que gera o APK debug. O app ainda não foi aberto num celular nem assinado, e não há APK publicado. Não descreva como pronto o que não foi testado no aparelho.
 
-Leia: `README.md`, `docs/REGRAS_DE_NEGOCIO.md`, `docs/ESTADO_ATUAL.md`, `docs/ARQUITETURA.md`, `docs/PLANO_ANDROID.md` e `docs/TESTES.md`. `docs/CONTEXTO_COMPLETO.md` reúne esses documentos automaticamente; não é uma segunda especificação para editar à mão.
+Leia: `CLAUDE.md` (atalhos), `README.md`, `docs/REGRAS_DE_NEGOCIO.md`, `docs/ESTADO_ATUAL.md`, `docs/ARQUITETURA.md`, `docs/PLANO_ANDROID.md` e `docs/TESTES.md`. `docs/CONTEXTO_COMPLETO.md` reúne esses documentos automaticamente; não é uma segunda especificação para editar à mão.
 
 Instruções explícitas do usuário prevalecem. Para decisões de produto, use as regras e o registro de decisões; para funcionamento implementado, confira código e testes. Divergência do código é pendência, não autorização para alterar a regra. Imagens antigas e o template original não substituem os requisitos.
 
@@ -30,6 +30,8 @@ Instruções explícitas do usuário prevalecem. Para decisões de produto, use 
 - `src/backup-crypto.bundle.js`: bundle gerado; manter fonte e lockfile coerentes ao alterar dependências.
 - `src/prototipo-check.js`: temporário para checar sintaxe, não versionar.
 - `docs/img/`: referências originais, não capturas dos novos fluxos.
+- `core/`: regras em Kotlin puro, espelho de `src/core.js`. Mudou uma regra? Mude e teste nos dois, ou registre a divergência.
+- `app/`: Android. Só UI, ViewModels, Room e integrações; nada de cálculo financeiro aqui.
 
 Preservar Atkinson Hyperlegible, bege/verde, quatro abas e estrada/Fiorino. Ajustes de legibilidade são permitidos; nova direção visual depende de pedido do usuário.
 
@@ -39,6 +41,6 @@ Após alterar regras/código: `npm test`. Após alterar fontes do HTML: `npm run
 
 Para documentação, conferir links locais, coerência entre implementado/previsto e executar `python3 scripts/build_context.py`. Não inventar APK, meses de uso real, testes no celular ou confirmação de download.
 
-Antes de programar Android, seguir `docs/PLANO_ANDROID.md`. Portar o comportamento, não a estrutura de localStorage. Regras financeiras fora da UI; transações e migrações Room; mesmos casos de referência em Kotlin. O modelo Android do documento é proposta, não migração pronta.
+Antes de programar Android, seguir `docs/PLANO_ANDROID.md` (próxima tarefa = primeira caixa `[ ]`). Regras novas ou alteradas vão primeiro para `core/` com teste. Portar o comportamento, não a estrutura de localStorage. Regras financeiras fora da UI; transações e migrações Room; mesmos casos de referência em Kotlin. O modelo Android do documento é proposta, não migração pronta.
 
 Na entrega, relatar mudanças, testes realmente executados, limitações e pendências. Modificar documentos/protótipo não equivale a concluir o aplicativo Android.

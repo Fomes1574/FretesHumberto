@@ -2,13 +2,16 @@
 
 Controle simples de fretes, abastecimentos, despesas e metas para um motorista Android com pouca familiaridade com tecnologia. O foco é anotar os valores e ver quanto sobrou no dia, com histórico e relatórios fáceis de consultar.
 
-**Situação em 30/10/2026: projeto e protótipo web. O aplicativo Android ainda não foi implementado. Não há APK.** O código atual usa HTML/JavaScript e armazenamento no navegador. Kotlin, Compose, Room e WorkManager são a arquitetura prevista.
+**Situação em 30/10/2026: protótipo web pronto e app Android com as funções principais.** Banco, telas, contas do mês e cópia de segurança estão no `app/` e passam nos testes do CI, que gera o APK debug. **Ainda não foi testado num celular nem há APK assinado para o motorista.** Para programar com o Claude Code, comece pelo [CLAUDE.md](CLAUDE.md).
+
+[![Android](https://github.com/Fomes1574/FretesHumberto/actions/workflows/android.yml/badge.svg)](https://github.com/Fomes1574/FretesHumberto/actions/workflows/android.yml)
 
 ## Documentação
 
 | Necessidade | Documento |
 |---|---|
 | Um único MD com o contexto inteiro | [CONTEXTO_COMPLETO.md](docs/CONTEXTO_COMPLETO.md) |
+| Começar a programar com o Claude Code | [CLAUDE.md](CLAUDE.md) |
 | Instruções para IA de programação | [AGENTS.md](AGENTS.md) |
 | Contrato das regras financeiras | [REGRAS_DE_NEGOCIO.md](docs/REGRAS_DE_NEGOCIO.md) |
 | Telas, design e arquitetura Android prevista | [ARQUITETURA.md](docs/ARQUITETURA.md) |
@@ -16,6 +19,8 @@ Controle simples de fretes, abastecimentos, despesas e metas para um motorista A
 | Etapas de desenvolvimento Android | [PLANO_ANDROID.md](docs/PLANO_ANDROID.md) |
 | Testes e limites da validação | [TESTES.md](docs/TESTES.md) e [design-qa.md](design-qa.md) |
 | Decisões e alterações | [DECISOES.md](docs/DECISOES.md) e [CHANGELOG.md](CHANGELOG.md) |
+| Chave do APK e como lançar versão | [CHAVE_ASSINATURA.md](docs/CHAVE_ASSINATURA.md) |
+| Ideias de outros apps (aguardando aprovação) | [MELHORIAS_PESQUISADAS.md](docs/MELHORIAS_PESQUISADAS.md) |
 
 ## Regras essenciais
 
@@ -44,7 +49,18 @@ Abra o endereço indicado pelo servidor na porta 4173. `docs/mobile.html` aprese
 
 Os dados iniciais são **fictícios**. “Começar do zero” permite testar sem os exemplos. Os registros ficam no `localStorage` desse navegador e podem desaparecer ao limpar seus dados. Não use o protótipo como único registro financeiro.
 
-## Testes e geração
+## Android
+
+JDK 17 e Android Studio (ou só o SDK). Na raiz:
+
+```sh
+./gradlew :core:test            # regras de negócio em Kotlin, sem Android
+./gradlew :app:assembleDebug    # APK debug em app/build/outputs/apk/debug/
+```
+
+O GitHub Actions roda os testes e gera o APK debug a cada push (aba **Actions** → artefato `meus-fretes-debug`). O APK para o celular do motorista sai assinado na página **Releases** quando uma tag `v*` é enviada — veja [CHAVE_ASSINATURA.md](docs/CHAVE_ASSINATURA.md).
+
+## Testes e geração do protótipo
 
 Node 22+ e Python 3. Não precisa instalar dependências para rodar os testes existentes ou gerar o HTML usando o bundle de criptografia já incluído:
 
@@ -67,9 +83,9 @@ Edite `src/` e regenere `docs/prototipo.html`. O gerador aproveita CSS, ícones,
 
 ## Situação dos testes
 
-Os 32 testes automatizados passam. A interface foi revisada no navegador em 29/10/2026, incluindo restauração com senha e letra ampliada. **Nenhum teste Android físico, build de APK ou migração Room foi realizado.** O salvamento físico do arquivo de backup não foi confirmado na automação e precisa de teste completo no aparelho. A recorrência atual funciona ao abrir/retomar a página, sem execução com navegador fechado.
+Os 32 testes automatizados passam. A interface foi revisada no navegador em 29/10/2026, incluindo restauração com senha e letra ampliada. No Android, os testes rodam na JVM (regras, banco e fluxos de tela com Robolectric) e o APK debug é gerado no CI; **nenhum teste em celular foi feito**. O salvamento físico do arquivo de backup não foi confirmado na automação e precisa de teste completo no aparelho. A recorrência atual funciona ao abrir/retomar a página, sem execução com navegador fechado.
 
-Não há publicação automática, workflow de build, integração com a Lalamove ou serviços de nuvem. Exportação CSV/PDF, biometria, manutenção por km e sincronização ainda não foram implementadas.
+O workflow de build roda a cada push e está verde. Não há integração com a Lalamove nem serviços de nuvem. Exportação CSV/PDF, biometria, manutenção por km e sincronização ainda não foram implementadas.
 
 ## Organização
 
@@ -81,8 +97,10 @@ Não há publicação automática, workflow de build, integração com a Lalamov
 | `src/build.py` | Geração do HTML final |
 | `src/backup-crypto.js` e bundle | Proteção de cópia também sem WebCrypto |
 | `tests/` | Testes e fixture fictícia |
+| `core/` | Regras do app Android em Kotlin puro, com testes |
+| `app/` | App Android (Compose + Room): telas, banco, contas do mês e cópia de segurança |
 | `docs/img/` | Referências visuais originais, anteriores às correções |
 | `docs/LICENCAS/` | Licenças dos componentes incorporados |
 | `scripts/build_context.py` | Gera o MD de contexto completo |
 
-O objetivo continua sendo custo zero. GitHub Actions para o APK futuro depende dos limites e permissões vigentes da conta; não é uma etapa já configurada nem uma garantia de disponibilidade. O protótipo atual não depende desse serviço.
+O objetivo continua sendo custo zero. O GitHub Actions já gera o APK debug; o uso depende dos limites e permissões vigentes da conta, sem garantia de disponibilidade. O protótipo atual não depende desse serviço.

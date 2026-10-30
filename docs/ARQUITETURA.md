@@ -2,7 +2,7 @@
 
 Repositório: [Fomes1574/FretesHumberto](https://github.com/Fomes1574/FretesHumberto) · Android, uso familiar · consolidado em 30 de outubro de 2026
 
-> **Situação:** projeto em fase de planejamento. As imagens abaixo vêm de um **protótipo web navegável** (`docs/prototipo.html`) usado para validar o design com o motorista. Ainda não existe app Android, APK ou teste feito no celular. Os valores mostrados são fictícios. O protótipo foi atualizado com as regras desta revisão; as imagens em `docs/img/` são referências visuais da versão original e não documentam todos os novos fluxos.
+> **Situação (30/10/2026):** o app Android tem banco, telas, contas do mês e cópia de segurança, testados na JVM pelo GitHub Actions, que gera o APK debug. **Ainda não foi aberto num celular nem assinado.** As imagens abaixo vêm do **protótipo web navegável** (`docs/prototipo.html`) usado para validar o design com o motorista. Os valores mostrados são fictícios. O protótipo foi atualizado com as regras desta revisão; as imagens em `docs/img/` são referências visuais da versão original e não documentam todos os novos fluxos.
 
 ---
 
@@ -160,6 +160,7 @@ Fretes e despesas são registrados separadamente, um por vez. A ordem de cadastr
 | Negativo | Vermelho `#A9221B`, sempre com sinal de menos (−) |
 | Botões | Pelo menos 48 dp; ações principais com 60–68 dp; cantos arredondados de 14–18 dp |
 | Ícones | Sempre acompanhados de texto nas ações |
+| Ícone do app | Fiorino branca em movimento sobre estrada, sol e céu verde; versão monocromática para ícones temáticos. Arquivos `res/drawable/ic_launcher_*.xml`; prévia em `img/13-icone.png` |
 
 ---
 
@@ -187,7 +188,7 @@ Fretes e despesas são registrados separadamente, um por vez. A ordem de cadastr
 | Abrir o app | A van sai do início e anda até a posição do lucro atual |
 | Lançar um frete abaixo da meta | A van **arranca, acelera e freia** até a nova posição. A estrada corre mais rápido que a van e as rodas giram na mesma velocidade |
 | Bater a meta | A van **atravessa a linha de chegada** e estaciona do outro lado. Ao cruzar, sai **confete** da bandeira, que cai e fica no asfalto por ~5 s |
-| Lançar valores **acima da meta** | **Só o número sobe.** A van e a estrada ficam paradas |
+| Lançar valores **acima da meta** | O número mostra o **valor final na hora**. A van e a estrada ficam paradas |
 | Apagar ou corrigir e ficar **abaixo da meta** | A van **dá ré**, atravessa a linha de volta e para na posição certa. A estrada e as rodas andam ao contrário e não há confete |
 | Trocar de aba e voltar | Nenhuma animação se nada mudou |
 | "Reduzir movimento" ligado no Android | A van vai direto à posição final, sem animação nem confete |
@@ -289,22 +290,22 @@ flowchart TD
 - As telas observam a mesma base (`Flow` do Room). Nenhuma tela guarda totais próprios.
 - Gráficos e a estrada animada em **Compose Canvas**, sem biblioteca paga nem serviço externo.
 
-### Modelo de dados
+### Modelo de dados (Room, versão 1)
+
+Implementado em `app/.../data/Entidades.kt`; esquema exportado em `app/schemas/`.
 
 | Tabela | Campos principais |
 |---|---|
-| `lancamento` | `id`, `tipo` (frete / abastecimento / despesa), `data`, `valorCentavos`, `descricao`, `criadoEm`, `editadoEm` |
-| `frete_detalhe` | `lancamentoId`, `km?`, `minutos?`; sem vínculo com despesas |
-| `abastecimento_detalhe` | `lancamentoId`, `litros` (2 casas), `precoLitroCentavos`, `modoEntrada` (preço / litros) |
-| `despesa_detalhe` | `lancamentoId`, `categoria`, `recorrenciaId?`; sem chave para frete |
-| `meta` | `tipo` (dia / mês), `valorCentavos`, `vigenteDesde`, `mesReferencia?` para meta mensal |
-| `config_carro` | `kmPorLitro`, `precoLitroPadrao`, `vigenteDesde` |
-| `recorrencia` | `id`, `inicio`; dados financeiros e atividade em versões por mês de vigência |
-| `recorrencia_versao` | `recorrenciaId`, `vigenteDesdeMes`, `descricao`, `valorCentavos`, `diaOriginal`, `categoria`, `fim`, `ativa`; combinação recorrência + vigência única |
-| `ocorrencia_mensal` | `recorrenciaId` + `mês` (únicos juntos), `dataAjustada`, `valorCentavos`, `status` (prevista / gerada / pulada), `lancamentoId?`, exceção individual opcional |
-| `conferencia_dia` | `data`, `conferidoEm`, referência da versão dos lançamentos; alterações posteriores pedem nova conferência |
+| `lancamento` | `id`, `tipo` (FRETE / ABASTECIMENTO / DESPESA), `data` (AAAA-MM-DD), `valor` (centavos), `descricao`; opcionais por tipo: `kmCentesimos`, `minutos`, `litrosCentesimos`, `precoLitro`, `modoAbastecimento`, `categoria`, `ocorrencia` (única); `criadoEm`, `editadoEm`. Índice por `data` |
+| `conta` | `id`, `inicio` |
+| `conta_versao` | `contaId` + `desde` (AAAA-MM, chave), `nome`, `valor`, `dia` original, `ativa`, `categoria`, `fim?` |
+| `ocorrencia` | `contaId` + `mes` (chave: única por conta e mês), `status` (PREVISTA / GERADA / PULADA), `lancamentoId?`, exceção do mês (`altData`, `altValor`, `altDescricao`, `altCategoria`) |
+| `meta_diaria` | `desde` (chave), `valor` |
+| `meta_mensal` | `mes` (chave), `valor` |
+| `dia` | `data`, `revisao`, `conferida?` (revisão no momento da conferência) |
+| `ajuste` | pares chave/valor: consumo, preço manual (data, valor, carimbo), meta mensal base |
 
-Este é o modelo Android proposto, não um banco já criado. Detalhamento de unidades, índices e etapas em [PLANO_ANDROID.md](PLANO_ANDROID.md). Gravações em transação, IDs estáveis e migrações versionadas; não usar atualização destrutiva.
+Os detalhes de cada tipo ficaram como colunas opcionais da própria tabela `lancamento`, em vez de tabelas separadas: é mais simples e não cria nenhuma coluna que ligue gasto a frete. Tamanho da letra e data da última cópia ficam no DataStore (preferências do aparelho). Gravações em transação, IDs estáveis e migrações versionadas; sem atualização destrutiva.
 
 Não existe relacionamento frete–despesa no banco. A calculadora não grava nessas tabelas. Excluir um frete afeta só esse registro e seus detalhes técnicos opcionais. Despesas e abastecimentos seguem intactos. Um erro de gravação não pode exibir “Salvo”; uma falha de leitura não pode substituir os dados por exemplos.
 
@@ -357,25 +358,34 @@ Somente para ver os mesmos dados em dois celulares ao mesmo tempo, por exemplo o
 
 ---
 
-## 10. Estrutura sugerida do repositório
+## 10. Estrutura do repositório
+
+Criada em 30/10/2026. O `:core` tem as regras, a cópia e os textos, com testes; o `:app` tem banco, telas, agendador e cópia.
 
 ```
 FretesHumberto/
-├─ app/
-│  └─ src/main/java/.../fretes/
-│     ├─ data/        (Room: entidades, DAOs, banco, migrações)
-│     ├─ domain/      (cálculos: lucro, metas, combustível, médias)
-│     ├─ ui/
-│     │  ├─ hoje/  historico/  relatorios/  ajustes/
-│     │  ├─ lancamento/   (frete, abasteci, despesa, calculadora)
-│     │  └─ estrada/      (cena animada da meta)
-│     └─ backup/      (exportar / restaurar)
-├─ docs/
-│  ├─ ARQUITETURA.md  (este arquivo)
-│  ├─ prototipo.html  (protótipo navegável)
-│  └─ img/
-├─ .github/workflows/build.yml
-└─ .gitignore
+├─ core/                        (Kotlin puro, sem Android — ./gradlew :core:test)
+│  └─ src/main/kotlin/.../core/
+│     ├─ Dinheiro.kt            (parse, arredondamento, filtro de digitação, Formato)
+│     ├─ Datas.kt               (semana seg–dom, mês, período, comparação, 6 meses)
+│     ├─ Modelo.kt              (Lancamento, Metas, textoMeta)
+│     ├─ Calculos.kt            (Relatorio.resumir, Calculadora, Combustivel)
+│     ├─ Recorrencias.kt        (contas do mês, vencimento, geração idempotente)
+│     ├─ Diario.kt              (salvar, apagar, desfazer, conferir — vira transação Room)
+│     └─ Estrada.kt             (posição da van, confete, curva, borrão das rodas)
+├─ app/                         (Android: Compose + Material 3)
+│  └─ src/main/kotlin/io/github/fomes1574/freteshumberto/
+│     ├─ MainActivity.kt
+│     ├─ ui/FretesApp.kt        (abas, telas por cima, avisos, restauração)
+│     ├─ ui/theme/Tema.kt       (cores, Atkinson Hyperlegible, tipografia)
+│     ├─ data/                  (Room, DAO, repositório com transações, DataStore)
+│     ├─ ui/hoje/ historico/ relatorios/ ajustes/ lancamento/ contas/ estrada/ comum/
+│     ├─ contas/                (WorkManager das contas do mês)
+│     └─ backup/                (arquivo .fretes pelo seletor do Android)
+├─ docs/                        (regras, decisões, plano, protótipo)
+├─ src/ tests/                  (protótipo web e seus 32 testes Node)
+├─ .github/workflows/android.yml
+└─ CLAUDE.md / AGENTS.md
 ```
 
 ---
@@ -396,6 +406,7 @@ FretesHumberto/
 | v1 | Corrigir interpretação de dinheiro, edição de duração, referência de preço e falhas silenciosas de gravação |
 | v2 | Exportar resumo mensal em CSV/PDF |
 | v2 | Manutenção e troca de óleo por km |
+| v1.1+ | Melhorias inspiradas em outros apps: ver [MELHORIAS_PESQUISADAS.md](MELHORIAS_PESQUISADAS.md) |
 | Futuro | Sincronização entre dois celulares (seção 8) |
 
 ### Regras já definidas para as contas do mês (v1)
@@ -415,7 +426,7 @@ FretesHumberto/
 2. Calculadora com R$ 80,00, 40 km, 8 km/l, R$ 4,00/l e 1,5 h → combustível R$ 20,00, sobra R$ 60,00, **R$ 1,50/km** e **R$ 40,00/h**. *(Conferido no protótipo.)*
 3. Abasteci com R$ 200,00 e preço R$ 3,70 → **54,05 L**. Com R$ 200,00 e 54,05 L → **R$ 3,70/L**. *(Conferido no protótipo.)*
 4. Digitar `54.0599` num campo decimal resulta em `54,05`. *(Conferido no protótipo.)*
-5. Lucro acima da meta → só o número sobe: a posição da van e da estrada não muda. *(Medido no protótipo.)*
+5. Lucro acima da meta → o valor final aparece na hora e a posição da van e da estrada não muda. *(Medido no protótipo; regra em `core/Estrada.kt`.)*
 6. Apagar um frete e ficar abaixo da meta → a van volta à posição proporcional, sem confete. *(Medido no protótipo.)*
 7. Cruzar a meta → a van termina depois da linha e o confete aparece uma única vez.
 8. Salvar com toque duplo cria um único lançamento.
