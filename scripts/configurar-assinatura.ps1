@@ -35,8 +35,13 @@ function Set-SecretDoGitHub([string]$Nome, [string]$Valor) {
     if ($LASTEXITCODE -ne 0) { throw "Falha ao gravar o Secret $Nome." }
 }
 
-& $gh.Source auth status --hostname github.com *> $null
-if ($LASTEXITCODE -ne 0) {
+$autenticado = & {
+    # O CLI escreve avisos em stderr mesmo em comandos consultivos no Windows PowerShell.
+    $ErrorActionPreference = 'Continue'
+    & $gh.Source auth status --hostname github.com *> $null
+    $LASTEXITCODE -eq 0
+}
+if (-not $autenticado) {
     Invoke-GitHub auth login --hostname github.com --web --git-protocol https
 }
 $admin = Invoke-GitHub api --hostname github.com repos/Fomes1574/FretesHumberto --jq '.permissions.admin'
