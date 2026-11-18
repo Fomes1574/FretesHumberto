@@ -1,17 +1,22 @@
 name: Android
 
 # Roda a cada push e pull request: testes do protótipo, testes das regras (:core),
-# testes do app e APK debug. Em tag v* (ex.: v0.1.0) também gera o APK release assinado,
-# desde que os Secrets da chave estejam configurados (docs/CHAVE_ASSINATURA.md).
+# testes do app e APK debug. A publicação oficial exige uma tag v* ou execução
+# manual na main, com a assinatura configurada (docs/CHAVE_ASSINATURA.md).
 on:
   push:
     branches: [main]
     tags: ['v*']
   pull_request:
   workflow_dispatch:
+    inputs:
+      publicar_assinado:
+        description: Publicar o APK oficial
+        type: boolean
+        default: false
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: android-${{ github.ref }}
@@ -42,14 +47,6 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      # Mesma chave de depuração em todos os builds: sem ela, cada APK novo teria outra
-      # assinatura e o Android não deixaria instalar por cima (perderia os dados).
-      - name: Chave de depuração estável
-        uses: actions/cache@v4
-        with:
-          path: ~/.android/debug.keystore
-          key: chave-depuracao-meus-fretes-v1
-
       - name: Testes das regras (:core)
         run: ./gradlew :core:test --stacktrace
 
@@ -72,59 +69,6 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 7
 
-      # APK com link direto (sem .zip) na página Releases, etiqueta fixa "meus-fretes".
-      # Só no main. Cada arquivo de download continua associado à sua assinatura:
-      # https://github.com/Fomes1574/FretesHumberto/releases/download/meus-fretes/MeusFretes.apk
-      - name: Publicar APK nos Releases
-        if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          cp app/build/outputs/apk/debug/app-debug.apk MeusFretes.apk
-          # Um cache ausente pode gerar outra chave. Confira o certificado do APK
-          # publicado antes de substituir o link que os usuários usam para atualizar.
-          anterior=$(mktemp -d)
-          gh release download meus-fretes --pattern MeusFretes.apk --dir "$anterior"
-          apksigner="$ANDROID_HOME/build-tools/36.0.0/apksigner"
-          assinatura() {
-            "$apksigner" verify --print-certs "$1" | sed -n 's/^Signer #[0-9]* certificate SHA-256 digest: //p' | sort
-          }
-          antiga=$(assinatura "$anterior/MeusFretes.apk")
-          nova=$(assinatura MeusFretes.apk)
-          [[ -n "$antiga" && -n "$nova" ]]
-          arquivo=MeusFretes.apk
-          if [[ "$antiga" != "$nova" ]]; then
-            echo "::warning::A chave do APK mudou. O link de atualização anterior foi preservado."
-            arquivo=MeusFretes-nova-instalacao.apk
-            publicados=$(gh release view meus-fretes --json assets --jq '.assets[].name')
-            if grep -Fxq "$arquivo" <<< "$publicados"; then
-              gh release download meus-fretes --pattern "$arquivo" --dir "$anterior"
-              alternativa=$(assinatura "$anterior/$arquivo")
-              [[ -n "$alternativa" ]]
-              if [[ "$alternativa" != "$nova" ]]; then
-                arquivo="MeusFretes-nova-instalacao-${nova:0:12}.apk"
-                if grep -Fxq "$arquivo" <<< "$publicados"; then
-                  gh release download meus-fretes --pattern "$arquivo" --dir "$anterior"
-                  [[ "$(assinatura "$anterior/$arquivo")" == "$nova" ]]
-                fi
-              fi
-            fi
-            cp MeusFretes.apk "$arquivo"
-          fi
-          cat > notas.md <<NOTAS
-          Meus Fretes, gerado automaticamente do commit \`${GITHUB_SHA::7}\` em $(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M') (horário de Brasília).
-
-          Baixe **$arquivo** para instalar a versão atual no Android 8 ou mais novo.
-
-          - Antes de atualizar, faça uma cópia em Ajustes → Fazer cópia e guarde o arquivo fora da pasta do aplicativo.
-          - O Android permite instalar por cima da versão baixada pelo mesmo arquivo. Cada nome de arquivo fica associado a uma chave de assinatura.
-          - Se sua versão veio de outro arquivo e o Android recusar a atualização, confira a cópia antes de fazer uma instalação nova e restaurar os dados em Ajustes.
-          - Esta versão usa chave de depuração. Veja docs/CHAVE_ASSINATURA.md.
-          NOTAS
-          gh release upload meus-fretes "$arquivo" --clobber
-          gh release edit meus-fretes --latest --notes-file notas.md
-
       - name: Guardar relatórios de teste
         if: failure()
         uses: actions/upload-artifact@v4
@@ -133,32 +77,55 @@ jobs:
           path: '**/build/reports/tests/'
           retention-days: 7
 
-      # ---- Release assinado: só em tag v* e só se a chave existir nos Secrets.
-      - name: Preparar chave de assinatura
-        if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          KEYSTORE_BASE64: ${{ secrets.FRETES_KEYSTORE_BASE64 }}
-        run: |
-          if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "::error::Secret FRETES_KEYSTORE_BASE64 ausente. Veja docs/CHAVE_ASSINATURA.md"; exit 1
-          fi
-          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/fretes.jks"
-          echo "FRETES_KEYSTORE_PATH=$RUNNER_TEMP/fretes.jks" >> "$GITHUB_ENV"
+  oficial:
+    name: APK oficial assinado
+    if: >-
+      startsWith(github.ref, 'refs/tags/v') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publicar_assinado)
+    needs: [prototipo, android]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    concurrency:
+      group: android-publicacao-oficial
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: APK release assinado
-        if: startsWith(github.ref, 'refs/tags/v')
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Gerar APK com a chave definitiva
         env:
+          FRETES_KEYSTORE_BASE64: ${{ secrets.FRETES_KEYSTORE_BASE64 }}
           FRETES_KEYSTORE_PASSWORD: ${{ secrets.FRETES_KEYSTORE_PASSWORD }}
           FRETES_KEY_ALIAS: ${{ secrets.FRETES_KEY_ALIAS }}
           FRETES_KEY_PASSWORD: ${{ secrets.FRETES_KEY_PASSWORD }}
-        run: ./gradlew :app:assembleRelease --stacktrace
-
-      - name: Publicar na página de Releases
-        if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/release/app-release.apk "MeusFretes-${GITHUB_REF_NAME}.apk"
-          gh release create "$GITHUB_REF_NAME" "MeusFretes-${GITHUB_REF_NAME}.apk" \
-            --title "Meus Fretes ${GITHUB_REF_NAME}" \
-            --notes "APK assinado para instalar por cima da versão anterior. Veja CHANGELOG.md."
+          set -euo pipefail
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+          for nome in FRETES_KEYSTORE_BASE64 FRETES_KEYSTORE_PASSWORD FRETES_KEY_ALIAS FRETES_KEY_PASSWORD; do
+            if [[ -z ${!nome} ]]; then
+              echo "::error::Secret $nome ausente. Veja docs/CHAVE_ASSINATURA.md."
+              exit 1
+            fi
+          done
+          umask 077
+          export FRETES_KEYSTORE_PATH="$RUNNER_TEMP/fretes-release.p12"
+          trap 'rm -f "$FRETES_KEYSTORE_PATH"' EXIT
+          printf '%s' "$FRETES_KEYSTORE_BASE64" | base64 -d > "$FRETES_KEYSTORE_PATH"
+          unset FRETES_KEYSTORE_BASE64
+          ./gradlew :app:assembleRelease --no-daemon --stacktrace
+
+      - name: Validar e publicar o APK oficial
+        env:
+          FRETES_SIGNING_CERT_SHA256: ${{ vars.FRETES_SIGNING_CERT_SHA256 }}
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/publicar-apk.sh app/build/outputs/apk/release/app-release.apk

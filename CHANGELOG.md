@@ -1,5 +1,10 @@
 # Histórico de alterações
 
+## 0.2.1
+
+- Prepara a primeira edição oficial com assinatura permanente e publicação versionada. A publicação verifica o certificado, o identificador e o código de versão do APK.
+- O APK debug fica no artefato de testes do GitHub Actions.
+
 ## 0.2.0 — 18/11/2026
 
 - Quadro de valores alinhados, com ganhos verdes, gastos vermelhos e total branco.

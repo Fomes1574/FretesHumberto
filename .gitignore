@@ -8,6 +8,7 @@ local.properties
 keystore.properties
 *.jks
 *.keystore
+*.p12
 google-services.json
 *.fretes
 !tests/fixtures/restauracao-teste.fretes

@@ -2,7 +2,7 @@
 
 Controle simples de fretes, abastecimentos, despesas e metas para um motorista Android com pouca familiaridade com tecnologia. O foco é anotar os valores e ver quanto sobrou no dia, com histórico e relatórios fáceis de consultar.
 
-**Versão 0.2.0, em 18/11/2026.** Banco, telas, contas do mês e cópia de segurança estão no `app/` e passam nos testes do CI, que gera o APK debug. **Ainda não foi testado num celular nem há APK assinado para o motorista.** Para programar com o Claude Code, comece pelo [CLAUDE.md](CLAUDE.md).
+**Versão 0.2.1 em preparação, em 18/11/2026.** Banco, telas, contas do mês e cópia de segurança estão no `app/` e passam nos testes do CI, que gera o APK debug. **Ainda não foi testado num celular nem há APK assinado para o motorista.** Para programar com o Claude Code, comece pelo [CLAUDE.md](CLAUDE.md).
 
 [![Android](https://github.com/Fomes1574/FretesHumberto/actions/workflows/android.yml/badge.svg)](https://github.com/Fomes1574/FretesHumberto/actions/workflows/android.yml)
 
@@ -58,9 +58,9 @@ JDK 17 e Android Studio (ou só o SDK). Na raiz:
 ./gradlew :app:assembleDebug    # APK debug em app/build/outputs/apk/debug/
 ```
 
-**Baixar a versão indicada nas notas do [Meus Fretes](https://github.com/Fomes1574/FretesHumberto/releases/tag/meus-fretes).** O CI confere o certificado antes de substituir um APK. Cada nome de arquivo mantém sua assinatura para que o link usado na instalação continue servindo para atualizações com a mesma chave.
+As versões oficiais serão publicadas em [Releases](https://github.com/Fomes1574/FretesHumberto/releases) com o arquivo `MeusFretes.apk`. O GitHub Actions verifica a chave de assinatura e o código de versão antes de publicar. Configure a chave uma vez seguindo o [guia de assinatura](docs/CHAVE_ASSINATURA.md).
 
-O GitHub Actions roda os testes e gera o APK debug a cada push (aba **Actions** → artefato `meus-fretes-debug`). O APK para o celular do motorista sai assinado na página **Releases** quando uma tag `v*` é enviada — veja [CHAVE_ASSINATURA.md](docs/CHAVE_ASSINATURA.md).
+Para testar a compilação de desenvolvimento, abra **Actions** e baixe o artefato `meus-fretes-debug`.
 
 ## Testes e geração do protótipo
 

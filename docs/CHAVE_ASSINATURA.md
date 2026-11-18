@@ -1,82 +1,42 @@
-# Chave de assinatura do APK
+# Assinatura e atualização do Meus Fretes
 
-O Android só instala uma atualização **por cima** da versão anterior (sem apagar os dados) se as duas estiverem assinadas com a **mesma chave**. Perder a chave = não conseguir mais atualizar o app no celular do motorista sem desinstalar, ou seja, sem perder o banco.
+Os APKs oficiais usam o identificador `io.github.fomes1574.freteshumberto`. O Android instala uma nova versão por cima quando ela tem o mesmo identificador e a mesma assinatura, com código de versão compatível. O projeto exige um `versionCode` maior em cada publicação. As migrações do banco Room mantêm os dados ao mudar o esquema.
 
-Faça isto **uma vez**, antes de instalar a primeira versão de verdade no celular dele.
+## Configurar a chave uma vez no Windows
 
-## 1. Criar a chave (no seu computador)
+Use o Git, o [GitHub CLI](https://cli.github.com/) e o JDK 17 ou mais recente. O Android Studio normalmente já inclui o `keytool`.
 
-Precisa do JDK 17 (vem com o Android Studio). No terminal:
+Em uma cópia atualizada do repositório, rode no PowerShell:
 
-```sh
-keytool -genkeypair -v \
-  -keystore freteshumberto-release.jks \
-  -alias meusfretes \
-  -keyalg RSA -keysize 4096 \
-  -validity 36500
+```powershell
+powershell -NoProfile -ExecutionPolicy RemoteSigned -File .\scripts\configurar-assinatura.ps1
 ```
 
-- Escolha uma senha forte e anote num gerenciador de senhas.
-- `-validity 36500` = 100 anos.
-- **Nunca** coloque o `.jks` dentro da pasta do repositório. O `.gitignore` já bloqueia `*.jks`, mas guarde fora mesmo assim.
+O script usa a conta administradora de `Fomes1574/FretesHumberto`. Se precisar, o GitHub CLI vai pedir que você autorize o acesso pelo navegador. Separe no gerenciador de senhas uma senha exclusiva, com pelo menos 16 caracteres ASCII e sem espaços. O PowerShell pede essa senha de forma oculta.
 
-## 2. Guardar duas cópias
+A chave é criada em `%LOCALAPPDATA%\MeusFretes\assinatura\freteshumberto-release.p12`. Guarde uma segunda cópia do arquivo e preserve a senha. Para executar o script em outro PC depois, coloque a cópia nesse caminho antes de rodá-lo. O script reaproveita a chave existente e interrompe se o certificado do arquivo for diferente do certificado cadastrado.
 
-1. Num gerenciador de senhas ou pendrive guardado em casa.
-2. Num lugar na nuvem que só você acessa (Google Drive pessoal, por exemplo).
+O GitHub CLI envia a chave e a senha aos Secrets do repositório. A variável `FRETES_SIGNING_CERT_SHA256` guarda apenas a impressão digital do certificado público:
 
-Junto da chave, guarde: senha do arquivo, alias (`meusfretes`) e senha da chave.
-
-## 3. Configurar o GitHub Actions
-
-No repositório: **Settings → Secrets and variables → Actions → New repository secret**.
-
-| Secret | Valor |
+| Configuração | Valor |
 |---|---|
-| `FRETES_KEYSTORE_BASE64` | Conteúdo do `.jks` em base64 (comando abaixo) |
-| `FRETES_KEYSTORE_PASSWORD` | Senha do arquivo |
-| `FRETES_KEY_ALIAS` | `meusfretes` |
-| `FRETES_KEY_PASSWORD` | Senha da chave |
+| Secret `FRETES_KEYSTORE_BASE64` | Arquivo PKCS#12 em base64 |
+| Secret `FRETES_KEYSTORE_PASSWORD` | Senha do arquivo |
+| Secret `FRETES_KEY_ALIAS` | `meusfretes` |
+| Secret `FRETES_KEY_PASSWORD` | Senha da chave |
+| Variável `FRETES_SIGNING_CERT_SHA256` | SHA-256 do certificado público |
 
-Gerar o base64:
+## Publicar versões oficiais
 
-```sh
-# Linux
-base64 -w0 freteshumberto-release.jks > chave.txt
-# macOS
-base64 -i freteshumberto-release.jks -o chave.txt
-# Windows (PowerShell)
-[Convert]::ToBase64String([IO.File]::ReadAllBytes("freteshumberto-release.jks")) > chave.txt
-```
+1. Aumente `versionCode` e atualize `versionName` em `app/build.gradle.kts`. Registre a versão no [CHANGELOG](../CHANGELOG.md).
+2. Depois de enviar o código para `main`, abra o workflow **Android** em **Actions**. Em **Run workflow**, selecione a `main` e marque **Publicar o APK oficial**. Uma tag `v` seguida da versão do app também dispara a publicação.
+3. Os testes rodam antes da publicação. O workflow verifica a assinatura, compara com o APK anterior e exige um código de versão maior. Ele publica `MeusFretes.apk` no Release correspondente à versão. Cada versão oficial pode ser encontrada em [Releases](https://github.com/Fomes1574/FretesHumberto/releases). Depois da primeira publicação, o [link do APK mais recente](https://github.com/Fomes1574/FretesHumberto/releases/latest/download/MeusFretes.apk) serve para baixar as próximas versões.
 
-Cole o conteúdo de `chave.txt` no Secret e **apague o `chave.txt`** depois.
+Na configuração inicial, passar `-Publicar` ao script também dispara o workflow pela `main`.
 
-## 4. Gerar uma versão
+## Instalação e conferência
 
-1. Aumente `versionCode` (sempre +1) e `versionName` em `app/build.gradle.kts`.
-2. Anote a mudança no `CHANGELOG.md`.
-3. Crie a tag e envie:
-
-```sh
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-O workflow `Android` gera `MeusFretes-v0.1.0.apk` assinado e publica na página **Releases** do repositório.
-
-## 5. Build release local (opcional)
-
-Crie `keystore.properties` na raiz do repositório (já ignorado pelo Git):
-
-```properties
-storeFile=../caminho/fora/do/repo/freteshumberto-release.jks
-storePassword=...
-keyAlias=meusfretes
-keyPassword=...
-```
-
-E rode `./gradlew :app:assembleRelease`.
-
-## Sobre o APK debug
-
-O APK debug gerado a cada push usa uma chave temporária do próprio GitHub, diferente a cada execução, e tem o ID `io.github.fomes1574.freteshumberto.debug`. Ele serve **só para testar**: instala ao lado da versão real e não atualiza por cima de outro debug gerado em outra execução. No celular do motorista, instale apenas o APK de **Releases**.
+- A edição de teste tem o identificador `io.github.fomes1574.freteshumberto.debug` e pode coexistir com a oficial. Quem tiver lançamentos de teste pode exportar um arquivo em **Ajustes → Fazer cópia** e importá-lo na edição oficial.
+- Quem usa a edição oficial abre o novo `MeusFretes.apk` no Android e escolhe **Atualizar**.
+- Para conferir a preservação dos dados, cadastre um frete, um abastecimento e um pedágio na primeira versão. Instale um APK oficial de código superior usando **Atualizar** e confira os três registros, o histórico, os totais e a edição.
+- Os APKs de desenvolvimento estão no artefato `meus-fretes-debug` da aba **Actions**. O [Release de testes antigo](https://github.com/Fomes1574/FretesHumberto/releases/tag/meus-fretes) guarda as versões de depuração publicadas antes desse fluxo.
