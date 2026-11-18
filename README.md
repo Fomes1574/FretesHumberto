@@ -58,7 +58,7 @@ JDK 17 e Android Studio (ou só o SDK). Na raiz:
 ./gradlew :app:assembleDebug    # APK debug em app/build/outputs/apk/debug/
 ```
 
-**Baixar o app (link direto):** [MeusFretes.apk](https://github.com/Fomes1574/FretesHumberto/releases/download/meus-fretes/MeusFretes.apk) (página [Releases → Meus Fretes](https://github.com/Fomes1574/FretesHumberto/releases/tag/meus-fretes)). O CI confere o certificado antes de substituir o APK de atualização. Se a chave mudar, mantém o arquivo anterior e publica o novo como `MeusFretes-nova-instalacao.apk`.
+**Baixar a versão indicada nas notas do [Meus Fretes](https://github.com/Fomes1574/FretesHumberto/releases/tag/meus-fretes).** O CI confere o certificado antes de substituir um APK. Cada nome de arquivo mantém sua assinatura para que o link usado na instalação continue servindo para atualizações com a mesma chave.
 
 O GitHub Actions roda os testes e gera o APK debug a cada push (aba **Actions** → artefato `meus-fretes-debug`). O APK para o celular do motorista sai assinado na página **Releases** quando uma tag `v*` é enviada — veja [CHAVE_ASSINATURA.md](docs/CHAVE_ASSINATURA.md).
 

@@ -73,14 +73,14 @@ jobs:
           retention-days: 7
 
       # APK com link direto (sem .zip) na página Releases, etiqueta fixa "meus-fretes".
-      # Só no main (mesma chave de depuração sempre). Cada push ou execução manual no main troca
-      # o arquivo; o link continua o mesmo:
+      # Só no main. Cada arquivo de download continua associado à sua assinatura:
       # https://github.com/Fomes1574/FretesHumberto/releases/download/meus-fretes/MeusFretes.apk
       - name: Publicar APK nos Releases
         if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           cp app/build/outputs/apk/debug/app-debug.apk MeusFretes.apk
           # Um cache ausente pode gerar outra chave. Confira o certificado do APK
           # publicado antes de substituir o link que os usuários usam para atualizar.
@@ -93,25 +93,37 @@ jobs:
           antiga=$(assinatura "$anterior/MeusFretes.apk")
           nova=$(assinatura MeusFretes.apk)
           [[ -n "$antiga" && -n "$nova" ]]
+          arquivo=MeusFretes.apk
           if [[ "$antiga" != "$nova" ]]; then
             echo "::warning::A chave do APK mudou. O link de atualização anterior foi preservado."
-            cp MeusFretes.apk MeusFretes-nova-instalacao.apk
-            gh release upload meus-fretes MeusFretes-nova-instalacao.apk --clobber
-            exit 0
+            arquivo=MeusFretes-nova-instalacao.apk
+            publicados=$(gh release view meus-fretes --json assets --jq '.assets[].name')
+            if grep -Fxq "$arquivo" <<< "$publicados"; then
+              gh release download meus-fretes --pattern "$arquivo" --dir "$anterior"
+              alternativa=$(assinatura "$anterior/$arquivo")
+              [[ -n "$alternativa" ]]
+              if [[ "$alternativa" != "$nova" ]]; then
+                arquivo="MeusFretes-nova-instalacao-${nova:0:12}.apk"
+                if grep -Fxq "$arquivo" <<< "$publicados"; then
+                  gh release download meus-fretes --pattern "$arquivo" --dir "$anterior"
+                  [[ "$(assinatura "$anterior/$arquivo")" == "$nova" ]]
+                fi
+              fi
+            fi
+            cp MeusFretes.apk "$arquivo"
           fi
           cat > notas.md <<NOTAS
           Meus Fretes, gerado automaticamente do commit \`${GITHUB_SHA::7}\` em $(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M') (horário de Brasília).
 
-          Baixe o arquivo **MeusFretes.apk** abaixo direto no celular (Android 8 ou mais novo) e toque nele para instalar. Se o Android pedir, permita "instalar apps desconhecidos". Se o Play Protect avisar, toque em "Instalar mesmo assim".
+          Baixe **$arquivo** para instalar a versão atual no Android 8 ou mais novo.
 
-          - Para atualizar, baixe de novo pelo mesmo link e instale por cima: os dados continuam.
-          - Antes de atualizar, faça uma cópia em Ajustes → Fazer cópia, por segurança.
-          - Ainda não é a versão com a chave definitiva (docs/CHAVE_ASSINATURA.md).
+          - Antes de atualizar, faça uma cópia em Ajustes → Fazer cópia e guarde o arquivo fora da pasta do aplicativo.
+          - O Android permite instalar por cima da versão baixada pelo mesmo arquivo. Cada nome de arquivo fica associado a uma chave de assinatura.
+          - Se sua versão veio de outro arquivo e o Android recusar a atualização, confira a cópia antes de fazer uma instalação nova e restaurar os dados em Ajustes.
+          - Esta versão usa chave de depuração. Veja docs/CHAVE_ASSINATURA.md.
           NOTAS
-          gh release delete teste --yes --cleanup-tag || true
-          gh release delete meus-fretes --yes --cleanup-tag || true
-          gh release create meus-fretes MeusFretes.apk --latest --target "$GITHUB_SHA" \
-            --title "Meus Fretes" --notes-file notas.md
+          gh release upload meus-fretes "$arquivo" --clobber
+          gh release edit meus-fretes --latest --notes-file notas.md
 
       - name: Guardar relatórios de teste
         if: failure()
