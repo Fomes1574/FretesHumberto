@@ -174,7 +174,7 @@ private fun Abas(vm: FretesViewModel, e: Estado, aba: Aba, hoje: java.time.Local
     val temCopiaAnterior by vm.temCopiaAnterior.collectAsStateWithLifecycle()
     val ocupado by vm.ocupado.collectAsStateWithLifecycle()
 
-    val novo = { t: io.github.fomes1574.freteshumberto.core.Tipo, d: java.time.LocalDate -> vm.abrir(Sobreposta.FormLancamento(Formulario(t, null, d))) }
+    val novo = { t: io.github.fomes1574.freteshumberto.core.Tipo, d: java.time.LocalDate, categoria: String? -> vm.abrir(Sobreposta.FormLancamento(Formulario(t, null, d, categoria))) }
     val editar = { l: io.github.fomes1574.freteshumberto.core.Lancamento -> vm.abrir(Sobreposta.FormLancamento(Formulario(l.tipo, l, l.data))) }
 
     when (aba) {
@@ -190,6 +190,7 @@ private fun Abas(vm: FretesViewModel, e: Estado, aba: Aba, hoje: java.time.Local
                     vm.aba.value = Aba.RELATORIOS
                 },
                 irCopia = { vm.aba.value = Aba.AJUSTES },
+                verDia = { vm.abrirDia(hoje) },
             ),
         )
         Aba.HISTORICO -> TelaHistorico(
@@ -207,6 +208,7 @@ private fun Abas(vm: FretesViewModel, e: Estado, aba: Aba, hoje: java.time.Local
                 novo = novo,
                 editar = editar,
                 apagar = vm::apagar,
+                contas = { mes -> vm.mesContas.value = mes; vm.abrir(Sobreposta.Contas) },
                 compartilhar = { texto ->
                     val envio = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, texto)
                     contexto.startActivity(Intent.createChooser(envio, "Mandar resumo"))
@@ -233,9 +235,9 @@ private fun Sobrepostas(vm: FretesViewModel, e: Estado, topo: Sobreposta, hoje: 
     val mesContas by vm.mesContas.collectAsStateWithLifecycle()
     when (topo) {
         is Sobreposta.FormLancamento -> TelaLancamento(
-            topo.formulario, hoje, e.precoReferencia(), ocupado, vm::novoId, vm::agora,
+            topo.formulario, hoje, e.lancamentos, ocupado, vm::novoId, vm::agora,
             aoSalvar = { l, outro, limpar ->
-                vm.salvar(l, topo.formulario.existente != null, outro) { if (outro) limpar() else vm.fecharTopo() }
+                vm.salvar(l) { if (vm.pilha.value.lastOrNull() === topo) { if (outro) limpar() else vm.fecharTopo() } }
             },
             aoFechar = vm::fecharTopo,
         )

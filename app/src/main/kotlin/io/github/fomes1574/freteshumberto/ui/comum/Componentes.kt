@@ -8,7 +8,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -55,11 +57,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -244,14 +249,17 @@ fun CampoNumero(
     inteiro: Boolean = false,
     dica: String? = null,
     ultimo: Boolean = false,
+    foco: Modifier = Modifier,
+    corValor: Color = Color.Unspecified,
 ) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(rotulo, style = MaterialTheme.typography.titleMedium)
         OutlinedTextField(
             value = valor,
             onValueChange = { novo -> aoMudar(if (inteiro) novo.filter { it.isDigit() }.take(6) else io.github.fomes1574.freteshumberto.core.Dinheiro.campo(novo)) },
-            modifier = Modifier.fillMaxWidth(),
-            textStyle = if (grande) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.fillMaxWidth().then(foco),
+            textStyle = (if (grande) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.bodyLarge)
+                .copy(color = corValor),
             prefix = if (prefixo != null) {
                 { Text("$prefixo ", style = MaterialTheme.typography.titleMedium, color = Cores.Apagado) }
             } else null,
@@ -380,19 +388,36 @@ fun Escolha(texto: String, escolhido: Boolean, aoTocar: () -> Unit, modifier: Mo
 @Composable
 fun Segmentado(opcoes: List<String>, escolhido: Int, aoEscolher: (Int) -> Unit) {
     Surface(shape = RoundedCornerShape(16.dp), color = Color(0xFFE7E3D8), modifier = Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(4.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            opcoes.forEachIndexed { i, t ->
-                val sel = i == escolhido
-                TextButton(
-                    onClick = { aoEscolher(i) },
-                    modifier = Modifier.weight(1f).heightIn(min = 48.dp).semantics { selected = sel; role = Role.Tab },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.textButtonColors(
-                        containerColor = if (sel) Cores.Cartao else Color.Transparent,
-                        contentColor = Cores.Tinta,
-                    ),
-                ) {
-                    Text(t, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center, fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal)
+        BoxWithConstraints(Modifier.padding(4.dp)) {
+            val estilo = MaterialTheme.typography.labelLarge
+            val larguraPorOpcao = (maxWidth - 4.dp * (opcoes.size - 1)) / opcoes.size - 16.dp
+            val limite = with(LocalDensity.current) { larguraPorOpcao.roundToPx() }
+            val medidor = rememberTextMeasurer()
+            val duasLinhas = opcoes.size == 4 && opcoes.any {
+                medidor.measure(AnnotatedString(it), estilo.copy(fontWeight = FontWeight.Bold), softWrap = false)
+                    .size.width > limite
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                val linhas = if (duasLinhas) opcoes.indices.chunked(2) else listOf(opcoes.indices.toList())
+                linhas.forEach { indices ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        indices.forEach { i ->
+                            val sel = i == escolhido
+                            TextButton(
+                                onClick = { aoEscolher(i) },
+                                modifier = Modifier.weight(1f).heightIn(min = 48.dp).semantics { selected = sel; role = Role.Tab },
+                                shape = RoundedCornerShape(12.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp),
+                                colors = ButtonDefaults.textButtonColors(
+                                    containerColor = if (sel) Cores.Cartao else Color.Transparent,
+                                    contentColor = Cores.Tinta,
+                                ),
+                            ) {
+                                Text(opcoes[i], style = estilo, textAlign = TextAlign.Center,
+                                    fontWeight = if (sel) FontWeight.Bold else FontWeight.Normal)
+                            }
+                        }
+                    }
                 }
             }
         }

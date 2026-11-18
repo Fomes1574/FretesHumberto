@@ -10,7 +10,7 @@ head=old[:old.index('<script>')]
 head=re.sub(r'<link[^>]+(?:fonts.googleapis|fonts.gstatic)[^>]*>\s*','',head)
 font=(root/'src/fonts.css').read_text() if (root/'src/fonts.css').exists() else ''
 css='''
-.entry .info{background:none;border:0;text-align:left;cursor:pointer;padding:0;min-height:48px}
+.total{background:#183B2D;color:#EFF7EE}.total .big{color:#fff}.total .row{border-color:#517261;gap:10px}.total .label,.total .cmp{color:#EFF7EE}.total .row b{text-align:right}.ganho,.money.ganho input{color:#17603F}.gasto,.money.gasto input{color:#A9221B}.total .ganho{color:#A7F0BA}.total .gasto{color:#FFB6AF}.scene{display:block;width:100%;height:auto}.goal-road .roadLbl{display:none}.goal-status{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 12px;font-size:.82rem;margin:10px 0 6px}.goal-status span{font-weight:400}.goal-status>b{color:#17603F}.entry .info{background:none;border:0;text-align:left;cursor:pointer;padding:0;min-height:48px}
 .entry .v{font-weight:700;white-space:nowrap}
 .wide{width:100%;margin-top:10px}
 .danger{color:#A9221B!important;border-color:#A9221B!important}

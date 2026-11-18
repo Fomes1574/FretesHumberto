@@ -63,7 +63,7 @@ object Dinheiro {
         require(b.signum() > 0) { "Divisor inválido" }
         val sinal = if (a.signum() < 0) BigInteger.ONE.negate() else BigInteger.ONE
         val v = a * sinal
-        return (sinal * ((v + b / BigInteger.TWO) / b)).toLong()
+        return (sinal * ((v + b / BigInteger.TWO) / b)).longValueExact()
     }
 
     fun valido(c: Long): Boolean = c in 0..MAX
@@ -83,12 +83,16 @@ object Dinheiro {
 
     /**
      * Novo texto de um campo de valor. Um valor brasileiro colado com milhar ("R$ 1.234,56")
-     * vira "1234,56" sem mudar o valor; o resto passa por [filtrarDigitacao].
+     * vira "1234,56" sem mudar o valor. Entrada inválida fica visível até ser corrigida.
      */
     fun campo(texto: String): String {
         val colado = texto.contains("R$") || (texto.contains('.') && texto.contains(','))
-        if (colado) parse(texto)?.let { return Formato.paraCampo(it) }
-        return filtrarDigitacao(texto)
+        val valor = parse(texto) ?: return texto
+        return when {
+            colado || texto.count { it == '.' } > 1 -> Formato.paraCampo(valor)
+            '.' in texto && texto.substringAfter('.').length <= 2 -> texto
+            else -> filtrarDigitacao(texto)
+        }
     }
 }
 

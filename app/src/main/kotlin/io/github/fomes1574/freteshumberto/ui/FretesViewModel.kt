@@ -158,8 +158,8 @@ class FretesViewModel(private val fretes: FretesApplication) : ViewModel() {
 
     fun agora(): String = repo.agora()
 
-    fun salvar(l: Lancamento, editando: Boolean, outro: Boolean, depois: () -> Unit) =
-        gravar(if (outro) "Frete salvo. Pode anotar o próximo." else if (editando) "Corrigido." else "Salvo.", depois) { repo.salvar(l) }
+    fun salvar(l: Lancamento, depois: () -> Unit) =
+        gravar(null, depois) { repo.salvar(l) }
 
     /** Apaga só este lançamento e oferece "Desfazer" por 6 segundos. */
     fun apagar(l: Lancamento) {
@@ -221,13 +221,17 @@ class FretesViewModel(private val fretes: FretesApplication) : ViewModel() {
      */
     fun fazerCopia(destino: Uri, senha: String?) = gravar(null) {
         try {
-            withContext(Dispatchers.Default) {
+            val conferida = withContext(Dispatchers.Default) {
                 val json = Copia.paraJson(repo.carregar(), repo.agora())
                 val conteudo = if (senha.isNullOrEmpty()) json else Copia.cifrar(json, senha)
                 withContext(Dispatchers.IO) { arquivos.escrever(destino, conteudo) }
             }
-            prefs.registrarCopia(Instant.now())
-            avisar(if (senha.isNullOrEmpty()) "Cópia salva (sem senha)." else "Cópia salva com senha.")
+            if (conferida) {
+                prefs.registrarCopia(Instant.now())
+                avisar("Cópia conferida.")
+            } else avisar("Não foi possível conferir o arquivo. Abra a cópia ou escolha outro local.")
+        } catch (e: CopiaInvalida) {
+            avisar(e.mensagem)
         } catch (e: Exception) {
             avisar("Não foi possível salvar a cópia no arquivo escolhido. Tente outro lugar.")
         }
@@ -272,19 +276,16 @@ class FretesViewModel(private val fretes: FretesApplication) : ViewModel() {
      */
     fun confirmarRestauracao() {
         val c = _restauracao.value as? Restauracao.Confirmar ?: return
+        if (_ocupado.value) return
         _restauracao.value = null
         gravar(null) {
             try {
-                val atual = Copia.paraJson(repo.carregar(), repo.agora())
-                withContext(Dispatchers.IO) { arquivos.guardarPreventiva(atual) }
-                _temCopiaAnterior.value = true
-            } catch (e: Exception) {
-                avisar("Não foi possível guardar os dados atuais antes de restaurar. Nada foi alterado.")
-                return@gravar
-            }
-            try {
-                repo.substituirTudo(c.novo)
-                repo.gerarContas()
+                repo.restaurar(c.novo) { anterior ->
+                    withContext(Dispatchers.IO) {
+                        arquivos.guardarPreventiva(Copia.paraJson(anterior, repo.agora()))
+                    }
+                    _temCopiaAnterior.value = true
+                }
                 avisar("Cópia restaurada.")
             } catch (e: Exception) {
                 avisar("Não foi possível restaurar. Seus dados anteriores foram mantidos.")

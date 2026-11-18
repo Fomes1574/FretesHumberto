@@ -124,7 +124,17 @@ class Repositorio(
      * Troca todos os dados pelos da cópia, numa transação. Se algo falhar no meio,
      * o banco anterior continua intacto.
      */
-    suspend fun substituirTudo(novo: Estado) = banco.withTransaction {
+    suspend fun substituirTudo(novo: Estado) = banco.withTransaction { substituir(novo) }
+
+    /** A base e as contas vencidas só mudam juntas, após guardar a base atual. */
+    suspend fun restaurar(novo: Estado, guardarAnterior: suspend (Estado) -> Unit) = banco.withTransaction {
+        val atual = ler()
+        val completo = novo.gerarContas(hoje(), ::novoId, agora())
+        guardarAnterior(atual)
+        substituir(completo)
+    }
+
+    private suspend fun substituir(novo: Estado) {
         dao.apagarTodosLancamentos()
         dao.apagarTodasOcorrencias()
         dao.apagarVersoes()

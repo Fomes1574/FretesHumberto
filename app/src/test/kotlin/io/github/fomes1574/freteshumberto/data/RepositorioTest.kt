@@ -196,4 +196,51 @@ class RepositorioTest {
         withTimeout(5_000) { repo.estado.first { e -> e.contas.single().versaoEm(YearMonth.of(2026, 3))?.ativa == false } }
         Unit
     }
+
+    @Test fun `restauracao desfaz toda a troca se falhar ao gravar as contas vencidas`() = runBlocking {
+        val data = d("2026-03-15")
+        val base = frete(data.toString(), 12300L, "antes")
+        val daCopia = frete(data.toString(), 45600L, "novo")
+        val conta = io.github.fomes1574.freteshumberto.core.ContaMensal(
+            "conta-beta", data, listOf(
+                io.github.fomes1574.freteshumberto.core.VersaoConta(
+                    java.time.YearMonth.from(data), "Conta vencida", 1000L, 15
+                )
+            )
+        )
+        repo.salvar(base)
+        val candidato = Estado(
+            diario = io.github.fomes1574.freteshumberto.core.Diario(lancamentos = listOf(daCopia)),
+            contas = listOf(conta)
+        )
+        banco.openHelper.writableDatabase.execSQL(
+            "CREATE TRIGGER beta_bloqueio BEFORE INSERT ON lancamento " +
+                "WHEN NEW.ocorrencia IS NOT NULL BEGIN SELECT RAISE(ABORT, 'falha de teste'); END;"
+        )
+        val falha = runCatching {
+            repo.restaurar(candidato) { anterior -> assertEquals(listOf(base), anterior.lancamentos) }
+        }.exceptionOrNull()
+        org.junit.Assert.assertNotNull(falha)
+        assertEquals(listOf(base), repo.carregar().lancamentos)
+        banco.openHelper.writableDatabase.execSQL("DROP TRIGGER beta_bloqueio")
+        repo.restaurar(candidato) { }
+        assertEquals(2, repo.carregar().lancamentos.size)
+    }
+
+    @Test fun `historico grande mantém valores ao restaurar editar e desfazer no Room`() = runBlocking {
+        val hoje = d("2026-03-15")
+        val lancamentos = List(2000) { i -> frete(hoje.minusDays((i % 365).toLong()).toString(), 100L + i) }
+        val base = Estado(diario = io.github.fomes1574.freteshumberto.core.Diario(lancamentos))
+        repo.restaurar(base) { }
+        assertEquals(2000, repo.carregar().lancamentos.size)
+        val alterado = lancamentos[1999].copy(valor = 32100L, data = hoje.minusYears(2))
+        repo.salvar(alterado)
+        val apagado = requireNotNull(repo.apagar(alterado.id))
+        repo.desfazer(apagado)
+        repo.desfazer(apagado)
+        val final = repo.carregar().lancamentos
+        assertEquals(2000, final.size)
+        assertEquals(alterado, final.single { it.id == alterado.id })
+        assertEquals(lancamentos.dropLast(1).sumOf { it.valor } + alterado.valor, final.sumOf { it.valor })
+    }
 }

@@ -33,7 +33,7 @@ class AppTest {
         assertEquals("1234,56", Dinheiro.campo("R$ 1.234,56"))
         assertEquals("1234,56", Dinheiro.campo("1.234,56"))
         assertEquals("54,05", Dinheiro.campo("54.0599"))
-        assertEquals("85,5", Dinheiro.campo("85.5"))
+        assertEquals(8550L, Dinheiro.parse(Dinheiro.campo("85.5")))
         assertEquals(123456L, Dinheiro.parse(Dinheiro.campo("R$ 1.234,56")))
     }
 
@@ -193,7 +193,7 @@ class AppTest {
         val f = FiltroRelatorio(ModoRelatorio.DIA, d("2026-10-29"))
         val r = Relatorio.resumir(l, f.intervalo(), Metas())
         assertEquals(
-            "Meus Fretes — Quinta, 29 de outubro\nFretes: R$ 285,00 (1)\nCombustível: R$ 40,00\nOutras despesas: R$ 20,00\nLucro: R$ 225,00\nMeta do dia: R$ 250,00",
+            "Meus Fretes — Quinta, 29 de outubro\nValor ganho: R$ 285,00\nValor gasto: R$ 60,00\nCombustível: R$ 40,00\nPedágio: R$ 20,00\nOutros gastos: R$ 0,00\nTotal do trabalho: R$ 225,00\nMeta do dia: R$ 250,00",
             Textos.resumoParaEnviar(f, r, Metas()),
         )
     }
@@ -257,7 +257,7 @@ class AppTest {
     }
 
     @Test fun `copia de versao futura e recusada`() {
-        val futura = Copia.paraJson(Estado(), "x").replace("\"versao\":2", "\"versao\":99")
+        val futura = Copia.paraJson(Estado(), "x").replace("\"versao\":${Copia.VERSAO}", "\"versao\":99")
         assertRecusa("Esta cópia foi feita por uma versão mais nova do app. Atualize o app antes de restaurar.") { Copia.abrir(futura, null) }
     }
 
@@ -279,7 +279,7 @@ class AppTest {
 
     @Test fun `copia da versao 1 com meta mensal e conferencia ainda abre`() {
         val e = estadoCompleto()
-        val v1 = Copia.paraJson(e, "x").replace("\"versao\":2", "\"versao\":1")
+        val v1 = Copia.paraJson(e, "x").replace("\"versao\":${Copia.VERSAO}", "\"versao\":1")
             .replace("\"contas\":[", "\"metasMensais\":{\"2026-03\":700000},\"metaMensalBase\":550000,\"revisoes\":{\"2026-03-14\":3},\"conferidos\":{\"2026-03-14\":3},\"contas\":[")
         assertEquals(e, Copia.abrir(v1, null))
     }
@@ -296,5 +296,86 @@ class AppTest {
         } catch (e: CopiaInvalida) {
             assertEquals(msg, e.mensagem)
         }
+    }
+
+    @Test fun `campo conserva a ambiguidade e o sinal para validar antes de salvar`() {
+        listOf("1.234", "R$ 1.234", "-85,50", "1,234.56").forEach {
+            assertNull(Dinheiro.parse(Dinheiro.campo(it)))
+        }
+        assertEquals(123456L, Dinheiro.parse(Dinheiro.campo("R$ 1.234,56")))
+    }
+
+    @Test fun `corrigir contas respeita pulo pausa e inicio`() {
+        val hoje = java.time.LocalDate.parse("2026-11-18")
+        val mes = java.time.YearMonth.from(hoje)
+        var seq = 0
+        val id = { "oc-${++seq}" }
+        fun conta(dia: Int = 5, inicio: java.time.LocalDate = hoje.withDayOfMonth(1)) =
+            ContasDoMes.cadastrar(Estado(), "seguro", "Seguro", 10000, dia, inicio, null, hoje, id)
+        fun pular(e: Estado) = ContasDoMes.alternarPulo(e, "seguro", mes, hoje, id)
+        var e = ContasDoMes.editarSoEsteMes(conta(), "seguro", mes, "Seguro revisto", 13500, 7, hoje, id)
+        e = pular(pular(e))
+        assertEquals(13500L, e.lancamentos.single().valor)
+        assertEquals(hoje.withDayOfMonth(7), e.lancamentos.single().data)
+        e = ContasDoMes.editarSoEsteMes(pular(e), "seguro", mes, "Seguro revisto", 14500, 8, hoje, id)
+        assertTrue(e.lancamentos.isEmpty())
+        assertEquals(true, ContasDoMes.situacoes(e, mes).single().pulada)
+        assertEquals(14500L, pular(e).lancamentos.single().valor)
+
+        val pausada = ContasDoMes.alternarPausa(conta(25), "seguro", mes, hoje, id)
+        val emDiante = ContasDoMes.editarDesteMesEmDiante(pausada, "seguro", mes, "Seguro novo", 12000, 25, null, hoje, id)
+        val soMes = ContasDoMes.editarSoEsteMes(emDiante, "seguro", mes, "Seguro ajustado", 14000, 25, hoje, id)
+        val dia26 = hoje.withDayOfMonth(26)
+        assertTrue(soMes.gerarContas(dia26, id).lancamentos.isEmpty())
+        assertEquals(14000L, ContasDoMes.alternarPausa(soMes, "seguro", mes, dia26, id).lancamentos.single().valor)
+        val inicioTardio = conta(inicio = hoje.withDayOfMonth(20))
+        assertTrue(ContasDoMes.situacoes(inicioTardio, mes).isEmpty())
+        assertEquals("Prevista", ContasDoMes.situacoes(inicioTardio, mes.plusMonths(1)).single().texto)
+    }
+
+    @Test fun `abastecimento sem litros preserva media preco de referencia e copia`() {
+        val d = java.time.LocalDate.parse("2026-11-18")
+        val completo = Lancamento("a", Tipo.ABASTECIMENTO, d.minusDays(1), 6000, litrosCentesimos = 1500, precoLitro = 400)
+        val simples = Lancamento("b", Tipo.ABASTECIMENTO, d, 4000)
+        val pedagio = Lancamento("p", Tipo.DESPESA, d, 1800, categoria = CATEGORIA_PEDAGIO)
+        val e = Estado(diario = Diario(listOf(completo, simples, pedagio)))
+        val r = Relatorio.resumir(e.lancamentos, Intervalo(d.minusDays(1), d), e.metas)
+        assertEquals(10000L, r.combustivel)
+        assertEquals(400L, r.precoMedioLitro)
+        assertEquals(400L, e.precoReferencia())
+        assertEquals(1800L, r.pedagio)
+        assertEquals(11800L, r.gastos)
+        assertEquals(e, Copia.deJson(Copia.paraJson(e, "x")))
+    }
+
+    @Test fun `copia valida limite antes de exportar e preserva observacao longa existente`() {
+        val d = java.time.LocalDate.parse("2026-11-18")
+        val mes = java.time.YearMonth.from(d)
+        val versao = VersaoConta(mes, "Seguro", 100L, 5)
+        val contas = List(501) { ContaMensal("conta-$it", d, listOf(versao)) }
+        assertTrue(runCatching { Copia.paraJson(Estado(contas = contas), "x") }.exceptionOrNull() is CopiaInvalida)
+        val chave = Ocorrencia.chave("conta-0", mes)
+        val l = Lancamento("l", Tipo.DESPESA, d, 100L, "x".repeat(161), ocorrencia = chave)
+        val o = Ocorrencia("conta-0", mes, StatusOcorrencia.GERADA, l.id, AlteracaoMes(d, l.valor, l.descricao, "Outros"))
+        val e = Estado(Diario(listOf(l), mapOf(chave to o)), contas.take(1))
+        assertEquals(e, Copia.deJson(Copia.paraJson(e, "x")))
+    }
+
+    @Test fun `calculadora recusa combinacao que transbordaria`() {
+        assertNull(Calculadora.simular(Dinheiro.MAX, Dinheiro.MAX, 1, Dinheiro.MAX))
+    }
+
+    @Test fun `trinta mil lançamentos mantêm centavos na cópia e nos relatórios`() {
+        val dia = d("2026-11-18")
+        val lancamentos = List(30000) { i ->
+            Lancamento("beta-$i", Tipo.FRETE, dia.minusDays((i % 120).toLong()), 1000L + i)
+        }
+        val estado = Estado(diario = Diario(lancamentos))
+        val json = Copia.paraJson(estado, "2026-11-18T15:00:00Z")
+        val restaurado = Copia.abrir(Copia.cifrar(json, "senha-beta"), "senha-beta")
+        assertEquals(lancamentos, restaurado.lancamentos)
+        val periodo = Intervalo(dia.minusDays(119), dia)
+        val esperado = lancamentos.sumOf { it.valor }
+        repeat(50) { assertEquals(esperado, Relatorio.resumir(restaurado.lancamentos, periodo, estado.metas).lucro) }
     }
 }

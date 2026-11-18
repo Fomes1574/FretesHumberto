@@ -16,13 +16,17 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.fomes1574.freteshumberto.R
+import io.github.fomes1574.freteshumberto.core.CATEGORIA_PEDAGIO
 import io.github.fomes1574.freteshumberto.core.DataTexto
 import io.github.fomes1574.freteshumberto.core.Datas
 import io.github.fomes1574.freteshumberto.core.Estado
@@ -31,7 +35,6 @@ import io.github.fomes1574.freteshumberto.core.Intervalo
 import io.github.fomes1574.freteshumberto.core.Lancamento
 import io.github.fomes1574.freteshumberto.core.Relatorio
 import io.github.fomes1574.freteshumberto.core.Resumo
-import io.github.fomes1574.freteshumberto.core.Textos
 import io.github.fomes1574.freteshumberto.core.Tipo
 import io.github.fomes1574.freteshumberto.core.textoMeta
 import io.github.fomes1574.freteshumberto.ui.comum.Botao
@@ -39,34 +42,32 @@ import io.github.fomes1574.freteshumberto.ui.comum.BotaoIcone
 import io.github.fomes1574.freteshumberto.ui.comum.BotaoLinha
 import io.github.fomes1574.freteshumberto.ui.comum.Cartao
 import io.github.fomes1574.freteshumberto.ui.comum.Kpi
-import io.github.fomes1574.freteshumberto.ui.comum.LinhaConta
 import io.github.fomes1574.freteshumberto.ui.comum.Par
 import io.github.fomes1574.freteshumberto.ui.comum.Rotulo
 import io.github.fomes1574.freteshumberto.ui.comum.Selo
 import io.github.fomes1574.freteshumberto.ui.comum.TextoApagado
 import io.github.fomes1574.freteshumberto.ui.comum.TituloCartao
 import io.github.fomes1574.freteshumberto.ui.comum.TituloTela
-import io.github.fomes1574.freteshumberto.ui.comum.Valor
 import io.github.fomes1574.freteshumberto.ui.estrada.CenaEstrada
-import io.github.fomes1574.freteshumberto.ui.estrada.rotuloMeta
 import io.github.fomes1574.freteshumberto.ui.theme.Cores
 import java.time.LocalDate
 
 /** Ações da tela Hoje e da lista de lançamentos. */
 class AcoesHoje(
-    val novo: (Tipo, LocalDate) -> Unit,
+    val novo: (Tipo, LocalDate, String?) -> Unit,
     val calcular: () -> Unit,
     val editar: (Lancamento) -> Unit,
     val apagar: (Lancamento) -> Unit,
     val verMes: () -> Unit,
     val irCopia: () -> Unit,
+    val verDia: () -> Unit,
 )
 
 @Composable
 fun TelaHoje(e: Estado, hoje: LocalDate, posicoes: MutableMap<String, Float>, lembrarCopia: Boolean, margens: PaddingValues, acoes: AcoesHoje) {
-    val r = Relatorio.resumir(e.lancamentos, Intervalo(hoje, hoje), e.metas)
+    val r = remember(e, hoje) { Relatorio.resumir(e.lancamentos, Intervalo(hoje, hoje), e.metas) }
     val meta = e.metas.doDia(hoje)
-    val mes = Relatorio.resumir(e.lancamentos, Intervalo(Datas.mes(hoje).inicio, hoje), e.metas)
+    val mes = remember(e, hoje) { Relatorio.resumir(e.lancamentos, Intervalo(Datas.mes(hoje).inicio, hoje), e.metas) }
     val doDia = e.lancamentos.filter { it.data == hoje }.asReversed()
 
     Column(
@@ -74,29 +75,27 @@ fun TelaHoje(e: Estado, hoje: LocalDate, posicoes: MutableMap<String, Float>, le
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         TituloTela("Meus Fretes", DataTexto.longa(hoje))
-        Cartao {
-            Rotulo("Lucro de hoje")
-            Valor(r.lucro, grande = true)
-            Text(textoMeta(r.lucro, meta), style = MaterialTheme.typography.titleMedium)
-            CenaEstrada(r.lucro, meta, "dia", posicoes, rotuloMeta(meta))
+        ContaDoPeriodo(r)
+        Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Meta ${Formato.reais(meta)}", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    if (r.lucro < meta) "Faltam ${Formato.reais(meta - r.lucro)}" else textoMeta(r.lucro, meta),
+                    modifier = Modifier.weight(1f), textAlign = TextAlign.End,
+                    color = Cores.Verde, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            CenaEstrada(r.lucro, meta, "dia", posicoes)
         }
-        Botao("Anotar frete", { acoes.novo(Tipo.FRETE, hoje) }, icone = R.drawable.ic_mais, alto = true)
-        Par(
-            { m -> Botao("Abasteci", { acoes.novo(Tipo.ABASTECIMENTO, hoje) }, m, R.drawable.ic_combustivel, Cores.CombustivelClaro, Cores.Combustivel) },
-            { m -> Botao("Outra despesa", { acoes.novo(Tipo.DESPESA, hoje) }, m, R.drawable.ic_despesa, androidx.compose.ui.graphics.Color(0xFFE7E3D8), Cores.Tinta) },
-        )
-        BotaoLinha("Calcular um frete", acoes.calcular, icone = R.drawable.ic_calculadora)
+        Botao("Anotar frete", { acoes.novo(Tipo.FRETE, hoje, null) }, icone = R.drawable.ic_mais, alto = true)
+        AcoesGastos(hoje, acoes.novo)
+        BotaoLinha("Calcular frete", acoes.calcular, icone = R.drawable.ic_calculadora)
 
         Cartao {
-            TituloCartao("Conta de hoje")
-            ContaDoPeriodo(r)
-            TextoApagado("Combustível pelos abastecimentos anotados.")
-        }
-
-        Cartao {
-            TituloCartao("Lançado hoje")
+            TituloCartao("Últimos lançamentos")
             if (doDia.isEmpty()) TextoApagado("Nada anotado ainda hoje.")
-            ListaLancamentos(doDia, acoes.editar, acoes.apagar)
+            ListaLancamentos(doDia.take(3), acoes.editar, acoes.apagar)
+            if (doDia.size > 3) BotaoLinha("Ver todos", acoes.verDia)
         }
 
         Cartao {
@@ -117,13 +116,39 @@ fun TelaHoje(e: Estado, hoje: LocalDate, posicoes: MutableMap<String, Float>, le
     }
 }
 
-/** Fretes − combustível − outras despesas = lucro (R02). */
+/** O mesmo quadro financeiro na tela Hoje e nos relatórios. */
 @Composable
-fun ContaDoPeriodo(r: Resumo) {
-    LinhaConta("Fretes", Formato.reais(r.fretes), "(${r.qtdFretes})")
-    LinhaConta("Combustível", "− ${Formato.reais(r.combustivel)}", if (r.qtdAbastecimentos > 0) "(${r.qtdAbastecimentos} abastec.)" else null)
-    LinhaConta("Outras despesas", "− ${Formato.reais(r.outras)}")
-    LinhaConta("Lucro", Formato.reais(r.lucro), total = true, negativo = r.lucro < 0)
+fun ContaDoPeriodo(r: Resumo, aoRodape: @Composable () -> Unit = {}) {
+    Cartao(cor = Cores.FundoTotal) {
+        Text("TOTAL DO TRABALHO", color = Cores.TextoTotal, style = MaterialTheme.typography.labelLarge)
+        Text(Formato.reais(r.lucro), color = Color.White, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+        LinhaTotal("Valor ganho", r.fretes, Cores.GanhoNoTotal)
+        LinhaTotal("Valor gasto", r.gastos, Cores.GastoNoTotal, gasto = true)
+        LinhaTotal("Combustível", r.combustivel, Cores.GastoNoTotal, gasto = true, informado = r.qtdAbastecimentos > 0)
+        LinhaTotal("Pedágio", r.pedagio, Cores.GastoNoTotal, gasto = true, informado = CATEGORIA_PEDAGIO in r.porCategoria)
+        val outros = r.outras - r.pedagio
+        if (outros > 0) LinhaTotal("Outros gastos", outros, Cores.GastoNoTotal, gasto = true)
+        aoRodape()
+    }
+}
+
+@Composable
+private fun LinhaTotal(rotulo: String, valor: Long, cor: Color, gasto: Boolean = false, informado: Boolean = true) {
+    HorizontalDivider(color = Cores.LinhaTotal)
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(rotulo, color = Cores.TextoTotal, modifier = Modifier.weight(1f))
+        val exibido = if (informado) (if (gasto && valor > 0) "− " else "") + Formato.reais(valor) else "Sem registro"
+        Text(exibido, color = cor, fontWeight = FontWeight.Bold, textAlign = TextAlign.End)
+    }
+}
+
+@Composable
+fun AcoesGastos(dia: LocalDate, novo: (Tipo, LocalDate, String?) -> Unit) {
+    Par(
+        { m -> Botao("Combustível", { novo(Tipo.ABASTECIMENTO, dia, null) }, m, R.drawable.ic_combustivel, Cores.Cartao, Cores.Negativo) },
+        { m -> Botao("Pedágio", { novo(Tipo.DESPESA, dia, CATEGORIA_PEDAGIO) }, m, R.drawable.ic_despesa, Cores.Cartao, Cores.Negativo) },
+    )
+    BotaoLinha("Outro gasto", { novo(Tipo.DESPESA, dia, null) })
 }
 
 @Composable
@@ -155,7 +180,7 @@ fun LinhaLancamento(l: Lancamento, aoEditar: (Lancamento) -> Unit, aoApagar: (La
     }
     val detalhe = when (l.tipo) {
         Tipo.FRETE -> listOfNotNull(l.kmCentesimos?.let { "${numero(it)} km" }, l.minutos?.let { "$it min" }).joinToString(" · ")
-        Tipo.ABASTECIMENTO -> "${numero(l.litrosCentesimos ?: 0)} L · ${Formato.reais(l.precoLitro ?: 0)}/L"
+        Tipo.ABASTECIMENTO -> l.litrosCentesimos?.let { "${numero(it)} L · ${Formato.reais(l.precoLitro!!)}/L" }.orEmpty()
         Tipo.DESPESA -> if (l.ocorrencia != null) "mensal" else ""
     }
     val valor = (if (l.tipo == Tipo.FRETE) "" else "− ") + Formato.reais(l.valor)
@@ -172,7 +197,7 @@ fun LinhaLancamento(l: Lancamento, aoEditar: (Lancamento) -> Unit, aoApagar: (La
             }
             Text(descricaoDe(l), style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
-        Text(valor, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 6.dp))
+        Text(valor, color = if (l.tipo == Tipo.FRETE) Cores.Verde else Cores.Negativo, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 6.dp))
         BotaoIcone(R.drawable.ic_lixeira, "Apagar ${descricaoDe(l)} de ${Formato.reais(l.valor)}", { aoApagar(l) })
     }
 }

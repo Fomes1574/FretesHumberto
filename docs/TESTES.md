@@ -2,9 +2,17 @@
 
 Separar sempre: testes automatizados das regras JavaScript, revisão histórica da interface no navegador e testes futuros do Android.
 
+## Revisão beta de 18/11/2026
+
+Fluxos executados com Compose e Room no Robolectric e no Chromium em larguras de 360 e 412 px, inclusive letra A++. A captura das telas Android usa 360 dp. A revisão cobriu edição, valor colado, alerta de pedágio repetido, abastecimento com e sem litros, falha de restauração simulada no Room e destinos de arquivo com leitura recusada.
+
+O teste de volume no Room restaurou 2.000 lançamentos, mudou a data e o valor de um frete, apagou e desfez duas vezes mantendo o total correto. No Chromium foram abertos 365 dias e 12.001 lançamentos. Duas abas gravaram ao mesmo tempo e a restauração com downloads bloqueados pôde ser desfeita em Ajustes.
+
+O teste no aparelho físico ainda precisa cobrir teclado, toque, seletor Android e retomada do WorkManager em segundo plano.
+
 ## Resultado automatizado
 
-Comando: `npm test`. Suíte: `tests/regras.test.cjs`, executada com o runner do Node. **32 testes aprovados em 29/10/2026 e reexecutados em 30/10/2026; nenhuma falha.** Não exige instalação de pacotes, pois o bundle já está incluído.
+Comando: `npm test`. Suíte: `tests/regras.test.cjs`, executada com o runner do Node. **34 testes na versão 0.2.0.** A tabela abaixo também registra as verificações originais. Não exige instalação de pacotes, pois o bundle já está incluído.
 
 | Teste | Verificação |
 |---|---|

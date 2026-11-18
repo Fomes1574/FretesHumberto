@@ -15,7 +15,7 @@ Documento-fonte: [README.md](../README.md)
 
 Controle simples de fretes, abastecimentos, despesas e metas para um motorista Android com pouca familiaridade com tecnologia. O foco é anotar os valores e ver quanto sobrou no dia, com histórico e relatórios fáceis de consultar.
 
-**Situação em 30/10/2026: protótipo web pronto e app Android com as funções principais.** Banco, telas, contas do mês e cópia de segurança estão no `app/` e passam nos testes do CI, que gera o APK debug. **Ainda não foi testado num celular nem há APK assinado para o motorista.** Para programar com o Claude Code, comece pelo [CLAUDE.md](../CLAUDE.md).
+**Versão 0.2.0, em 18/11/2026.** Banco, telas, contas do mês e cópia de segurança estão no `app/` e passam nos testes do CI, que gera o APK debug. **Ainda não foi testado num celular nem há APK assinado para o motorista.** Para programar com o Claude Code, comece pelo [CLAUDE.md](../CLAUDE.md).
 
 [![Android](https://github.com/Fomes1574/FretesHumberto/actions/workflows/android.yml/badge.svg)](https://github.com/Fomes1574/FretesHumberto/actions/workflows/android.yml)
 
@@ -71,7 +71,7 @@ JDK 17 e Android Studio (ou só o SDK). Na raiz:
 ./gradlew :app:assembleDebug    # APK debug em app/build/outputs/apk/debug/
 ```
 
-**Baixar o app (link direto):** [MeusFretes.apk](https://github.com/Fomes1574/FretesHumberto/releases/download/meus-fretes/MeusFretes.apk) (página [Releases → Meus Fretes](https://github.com/Fomes1574/FretesHumberto/releases/tag/meus-fretes)). É republicado a cada atualização do `main`, com a mesma chave, para instalar por cima sem perder os dados; o link não muda.
+**Baixar o app (link direto):** [MeusFretes.apk](https://github.com/Fomes1574/FretesHumberto/releases/download/meus-fretes/MeusFretes.apk) (página [Releases → Meus Fretes](https://github.com/Fomes1574/FretesHumberto/releases/tag/meus-fretes)). O CI confere o certificado antes de substituir o APK de atualização. Se a chave mudar, mantém o arquivo anterior e publica o novo como `MeusFretes-nova-instalacao.apk`.
 
 O GitHub Actions roda os testes e gera o APK debug a cada push (aba **Actions** → artefato `meus-fretes-debug`). O APK para o celular do motorista sai assinado na página **Releases** quando uma tag `v*` é enviada — veja [CHAVE_ASSINATURA.md](CHAVE_ASSINATURA.md).
 
@@ -98,7 +98,7 @@ Edite `src/` e regenere `docs/prototipo.html`. O gerador aproveita CSS, ícones,
 
 ### Situação dos testes
 
-Os 32 testes automatizados passam. A interface foi revisada no navegador em 29/10/2026, incluindo restauração com senha e letra ampliada. No Android, os testes rodam na JVM (regras, banco e fluxos de tela com Robolectric) e o APK debug é gerado no CI; **nenhum teste em celular foi feito**. O salvamento físico do arquivo de backup não foi confirmado na automação e precisa de teste completo no aparelho. A recorrência atual funciona ao abrir/retomar a página, sem execução com navegador fechado.
+A interface foi testada no Chromium em 360 e 412 px, com A++ e restauração reversível. No Android, os testes rodam na JVM (regras, banco e fluxos de tela com Robolectric) e o APK debug é gerado no CI; **nenhum teste em celular foi feito**. O salvamento físico do arquivo de backup não foi confirmado na automação e precisa de teste completo no aparelho. A recorrência atual funciona ao abrir/retomar a página, sem execução com navegador fechado.
 
 O workflow de build roda a cada push e está verde. Não há integração com a Lalamove nem serviços de nuvem. Exportação CSV/PDF, biometria, manutenção por km e sincronização ainda não foram implementadas.
 
@@ -293,7 +293,7 @@ Fretes R$ 285 − combustível R$ 40 − despesas R$ 20 = **R$ 225**. Com meta R
 - Valores de lançamentos são positivos; o tipo define entrada ou saída. Resultados podem ser negativos.
 - Data financeira local sem horário: `AAAA-MM-DD`. Criação/edição técnica tem timestamp separado.
 - **O dia vira às 00:00 pelo horário de Brasília** (`America/Sao_Paulo`), mesmo se o celular estiver em outro fuso. Depois da meia-noite, "hoje" é um dia novo, sem fretes nem despesas; os do dia anterior ficam no Histórico.
-- Novos lançamentos começam em hoje, sem data financeira futura. Campos adicionais dependem do tipo: abastecimento exige preço ou litros; recorrência exige nome e repetição.
+- Novos lançamentos começam em hoje, sem data financeira futura. Campos adicionais dependem do tipo: no abastecimento, o valor gasto é obrigatório e preço por litro ou litros são opcionais. Recorrência exige nome e repetição.
 - Edição sem prazo de expiração. Qualquer lançamento antigo pode ser corrigido. Duração opcional em minutos inteiros: abrir/salvar 17 minutos mantém 17.
 
 ### R04 — Combustível
@@ -303,13 +303,13 @@ Abastecimento sai integralmente no dia em que foi cadastrado financeiramente, me
 ```text
 litros = valor pago ÷ preço por litro
 preço por litro = valor pago ÷ litros
-preço médio do período = soma dos valores pagos ÷ soma dos litros
+preço médio do período = valores pagos com litros informados ÷ litros informados
 percentual para o tanque = combustível ÷ fretes × 100
 ```
 
 R$ 200 ÷ R$ 3,70 = **54,05 L**; R$ 200 ÷ 54,05 L = **R$ 3,70/L**, arredondados. Sem litros ou fretes, omitir indicador correspondente em vez de dividir por zero.
 
-Guardar os dados de cada abastecimento. A referência de preço vem do mais recente por **data financeira**, com desempate técnico; lançamento antigo não pode tomar o lugar do mais novo. Editar/excluir o mais novo reavalia a referência. Ajustes aceita referência manual, sem alterar registros antigos. A precedência concreta atual está em `Core.price`.
+Guardar o valor mesmo sem informar litros ou preço. A referência vem do abastecimento com preço mais recente por **data financeira**, com desempate técnico; lançamento antigo não pode tomar o lugar do mais novo. Editar/excluir o mais novo reavalia a referência. Ajustes aceita referência manual, sem alterar registros antigos. A precedência concreta atual está em `Core.price`.
 
 ### R05 — Calculadora isolada
 
@@ -373,9 +373,9 @@ Unicidade por **recorrência+mês**. Abrir, retomar, restaurar e repetir agendam
 
 | Ação | Efeito |
 |---|---|
-| Só este mês | Exceção naquela ocorrência, preservando as demais |
-| Deste mês em diante | Nova versão da regra desde o mês selecionado; preservar anteriores e exceções individuais |
-| Pular este mês | Não lançar, ou retirar só a ocorrência existente, guardando que foi pulada |
+| Só este mês | Exceção naquela ocorrência, preservando as demais e mantendo o pulo ou a pausa até retomar |
+| Deste mês em diante | Nova versão desde o mês selecionado, preservando as anteriores, as exceções e a pausa |
+| Pular este mês | Retira ou impede a despesa daquele mês e guarda a alteração individual para a retomada |
 | Excluir despesa gerada | Pular aquela ocorrência para não ser recriada; manter regra e outros meses |
 | Desfazer | Restaurar exatamente a ocorrência removida, sem duplicação |
 | Pausar | Parar futuras gerações na vigência escolhida, preservando despesas já lançadas |
@@ -389,9 +389,9 @@ Dados no aparelho. Arquivo `.fretes` exportado manualmente, senha opcional e lem
 
 Cópia preserva lançamentos, IDs, detalhes, metas diárias históricas, versões de recorrência, exceções e meses pulados. Validar formato, versão, tipos, datas, limites, duplicidades e integridade antes de substituir. Falha mantém estado anterior.
 
-Protótipo: AES-256-GCM, PBKDF2-SHA256 com 210 mil iterações, salt aleatório de 16 bytes e IV de 12 bytes. WebCrypto ou implementação incorporada compatível. Senha não é salva e não tem recuperação. Cópia sem senha é legível; a cópia preventiva da restauração é sem senha e a tela informa isso.
+Protótipo: AES-256-GCM, PBKDF2-SHA256 com 210 mil iterações, salt aleatório de 16 bytes e IV de 12 bytes. WebCrypto ou implementação incorporada compatível. Senha não é salva e não tem recuperação. Cópia sem senha é legível; a base anterior é guardada localmente antes da restauração e pode ser recuperada em Ajustes.
 
-“Última cópia” no HTML registra a ação de exportar, não confirma que o arquivo foi guardado. No Android, verificar resultado do seletor/stream antes de afirmar gravação concluída. O download físico ainda precisa ser validado no aparelho.
+No navegador, “Última exportação iniciada” registra o pedido de download. No Android, a cópia só é conferida se a releitura devolver todo o conteúdo. A restauração do Android troca a base e grava as contas vencidas na mesma transação.
 
 Falha de gravação não pode mostrar “Salvo”; falha de leitura não pode trocar dados por exemplos. Atualização exige migração versionada, nunca limpeza do banco.
 
@@ -493,6 +493,10 @@ Documento-fonte: [docs/ESTADO_ATUAL.md](ESTADO_ATUAL.md)
 
 Revisão: 30/10/2026 (tarde). Protótipo web de 29/10/2026 + **app Android com as telas, o banco, as contas do mês e a cópia de segurança**. Tudo compila e passa nos testes da JVM no GitHub Actions, que gera o APK debug. **O app ainda não foi aberto num celular**: nada do que depende do aparelho foi conferido (toque, teclado, TalkBack, arquivo físico da cópia, WorkManager rodando com o app fechado, atualização por cima).
 
+### Revisão beta de 18/11/2026
+
+Hoje e Relatórios usam o mesmo quadro financeiro. Pedágio tem atalho e linha própria. Combustível aceita só o valor gasto, com detalhes opcionais. A Fiorino acompanha a meta diária. Contas previstas aparecem no relatório mensal em separado. A leitura de cópias do Android aceita formatos 1 a 3. O esquema Room permanece na versão 2.
+
 ### Implementado versus previsto
 
 | Área | Protótipo atual | Android |
@@ -500,11 +504,11 @@ Revisão: 30/10/2026 (tarde). Protótipo web de 29/10/2026 + **app Android com a
 | Hoje, Histórico, Relatórios, Ajustes | Implementados em HTML/JS | Implementados em Compose (`ui/`); testados na JVM, não no aparelho |
 | Fretes, abastecimentos e despesas independentes | Implementados | Implementados; banco sem coluna que ligue gasto a frete |
 | Calculadora isolada | Implementada, sem gravação no diário | Implementada com estado só da tela (`ui/lancamento/TelaCalculadora.kt`) |
-| Metas | Diária com vigência e mensal por mês | **Só diária** (mensal retirada em 30/10/2026); vale do dia em que mudou em diante (`meta_diaria`) |
+| Metas | Só diária, com vigência | **Só diária** (mensal retirada em 30/10/2026); vale do dia em que mudou em diante (`meta_diaria`) |
 | Dia, semana, mês, personalizado e dois dias | Implementados | Implementados (`ui/relatorios/`, `core/Textos.kt`) |
 | Recorrências com versões, exceções e mês pulado | Implementadas ao abrir/retomar | Implementadas: abertura do app + WorkManager a cada 12 h, mesma função idempotente |
 | Gráficos e estrada/Fiorino | SVG/JS | Compose Canvas (`ui/relatorios/Graficos.kt`, `ui/estrada/CenaEstrada.kt`) |
-| Desfazer exclusão | Implementado (o protótipo também tem conferência de dia) | Desfazer por 6 s; **sem conferência de dia** (retirada em 30/10/2026) |
+| Desfazer exclusão | Implementado | Desfazer por 6 s; **sem conferência de dia** (retirada em 30/10/2026) |
 | Cópia validada e senha opcional | Implementadas; salvamento físico não confirmado na automação | Implementadas com o seletor de arquivos; gravação conferida lendo de volta; **não testado no aparelho** |
 | Armazenamento | `localStorage` do navegador | Room (esquema v1 versionado) + DataStore; backup do Google no manifesto |
 | A/A+/A++ | Implementados; inspeção em largura de celular | Implementados; escala do Android, TalkBack e teclado não conferidos no aparelho |
@@ -1224,9 +1228,17 @@ Documento-fonte: [docs/TESTES.md](TESTES.md)
 
 Separar sempre: testes automatizados das regras JavaScript, revisão histórica da interface no navegador e testes futuros do Android.
 
+### Revisão beta de 18/11/2026
+
+Fluxos executados com Compose e Room no Robolectric e no Chromium em larguras de 360 e 412 px, inclusive letra A++. A captura das telas Android usa 360 dp. A revisão cobriu edição, valor colado, alerta de pedágio repetido, abastecimento com e sem litros, falha de restauração simulada no Room e destinos de arquivo com leitura recusada.
+
+O teste de volume no Room restaurou 2.000 lançamentos, mudou a data e o valor de um frete, apagou e desfez duas vezes mantendo o total correto. No Chromium foram abertos 365 dias e 12.001 lançamentos. Duas abas gravaram ao mesmo tempo e a restauração com downloads bloqueados pôde ser desfeita em Ajustes.
+
+O teste no aparelho físico ainda precisa cobrir teclado, toque, seletor Android e retomada do WorkManager em segundo plano.
+
 ### Resultado automatizado
 
-Comando: `npm test`. Suíte: `tests/regras.test.cjs`, executada com o runner do Node. **32 testes aprovados em 29/10/2026 e reexecutados em 30/10/2026; nenhuma falha.** Não exige instalação de pacotes, pois o bundle já está incluído.
+Comando: `npm test`. Suíte: `tests/regras.test.cjs`, executada com o runner do Node. **34 testes na versão 0.2.0.** A tabela abaixo também registra as verificações originais. Não exige instalação de pacotes, pois o bundle já está incluído.
 
 | Teste | Verificação |
 |---|---|
@@ -1462,6 +1474,15 @@ Documento-fonte: [CHANGELOG.md](../CHANGELOG.md)
 
 
 ## Histórico de alterações
+
+### 0.2.0 — 18/11/2026
+
+- Quadro de valores alinhados, com ganhos verdes, gastos vermelhos e total branco.
+- Pedágio rápido, abastecimento só com valor e detalhes editáveis. Relatório mensal mostra contas previstas.
+- Correções da validação do valor colado, de pausa e pulo de recorrências e de restauração atômica no Android.
+- Na web, gravações entre abas, dia de Brasília e recuperação local da base anterior à restauração.
+- Cópia Android v3 mantém leitura das antigas. O esquema Room permanece v2.
+
 
 ### 30/10/2026 (noite) — Só meta diária, dia de Brasília e correção da atualização das telas
 

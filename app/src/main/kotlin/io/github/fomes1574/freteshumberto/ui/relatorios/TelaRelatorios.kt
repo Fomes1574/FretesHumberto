@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.fomes1574.freteshumberto.R
 import io.github.fomes1574.freteshumberto.core.DataTexto
+import io.github.fomes1574.freteshumberto.core.ContasDoMes
 import io.github.fomes1574.freteshumberto.core.Datas
 import io.github.fomes1574.freteshumberto.core.Estado
 import io.github.fomes1574.freteshumberto.core.FiltroRelatorio
@@ -39,13 +40,13 @@ import io.github.fomes1574.freteshumberto.ui.comum.Cartao
 import io.github.fomes1574.freteshumberto.ui.comum.Kpi
 import io.github.fomes1574.freteshumberto.ui.comum.LinhaConta
 import io.github.fomes1574.freteshumberto.ui.comum.Par
-import io.github.fomes1574.freteshumberto.ui.comum.Rotulo
 import io.github.fomes1574.freteshumberto.ui.comum.Segmentado
 import io.github.fomes1574.freteshumberto.ui.comum.Selo
 import io.github.fomes1574.freteshumberto.ui.comum.TextoApagado
 import io.github.fomes1574.freteshumberto.ui.comum.TituloCartao
 import io.github.fomes1574.freteshumberto.ui.comum.TituloTela
 import io.github.fomes1574.freteshumberto.ui.comum.Valor
+import io.github.fomes1574.freteshumberto.ui.hoje.AcoesGastos
 import io.github.fomes1574.freteshumberto.ui.hoje.ContaDoPeriodo
 import io.github.fomes1574.freteshumberto.ui.hoje.ListaLancamentos
 import io.github.fomes1574.freteshumberto.ui.hoje.numero
@@ -57,17 +58,19 @@ class AcoesRelatorio(
     val mudarFiltro: (FiltroRelatorio) -> Unit,
     val escolherPeriodo: () -> Unit,
     val escolherDoisDias: () -> Unit,
-    val novo: (Tipo, LocalDate) -> Unit,
+    val novo: (Tipo, LocalDate, String?) -> Unit,
     val editar: (Lancamento) -> Unit,
     val apagar: (Lancamento) -> Unit,
     val compartilhar: (String) -> Unit,
+    val contas: (YearMonth) -> Unit,
 )
 
 @Composable
 fun TelaRelatorios(e: Estado, f: FiltroRelatorio, hoje: LocalDate, posicoes: MutableMap<String, Float>, margens: PaddingValues, acoes: AcoesRelatorio) {
     val p = f.intervalo()
-    val r = Relatorio.resumir(e.lancamentos, p, e.metas, f.selecionadas())
+    val r = remember(e, f) { Relatorio.resumir(e.lancamentos, p, e.metas, f.selecionadas()) }
     val parcial = f.parcial(hoje)
+    var indicadores by remember(f) { mutableStateOf(false) }
     var selecionado by remember(f) { mutableStateOf<LocalDate?>(null) }
     var verDias by remember(f) { mutableStateOf(false) }
 
@@ -109,12 +112,15 @@ fun TelaRelatorios(e: Estado, f: FiltroRelatorio, hoje: LocalDate, posicoes: Mut
             }
         }
 
-        Cartao {
-            Rotulo(f.titulo())
-            Valor(r.lucro, grande = true)
-            Textos.comparacao(e.lancamentos, f, r, e.metas, hoje)?.let { TextoApagado(it) }
-            if (f.modo == ModoRelatorio.DIA && r.qtdFretes > 0) Text(textoMeta(r.lucro, e.metas.doDia(p.inicio)), style = MaterialTheme.typography.titleMedium)
+        ContaDoPeriodo(r) {
+            Textos.comparacao(e.lancamentos, f, r, e.metas, hoje)?.let {
+                Text(it, color = Cores.TextoTotal, style = MaterialTheme.typography.bodyMedium)
+            }
+            if (f.modo == ModoRelatorio.DIA && r.qtdFretes > 0) {
+                Text(textoMeta(r.lucro, e.metas.doDia(p.inicio)), color = Cores.TextoTotal)
+            }
         }
+        if (f.modo != ModoRelatorio.DOIS_DIAS) BotaoLinha("Comparar dois dias", acoes.escolherDoisDias)
 
         if (f.modo == ModoRelatorio.DOIS_DIAS && f.doisDias.size == 2) {
             val (a, b) = f.doisDias.sorted()
@@ -131,17 +137,15 @@ fun TelaRelatorios(e: Estado, f: FiltroRelatorio, hoje: LocalDate, posicoes: Mut
         if (f.modo != ModoRelatorio.DIA) {
             val dias = if (f.modo == ModoRelatorio.DOIS_DIAS) f.doisDias.sorted() else p.dias()
             Cartao {
-                TituloCartao("Lucro por dia")
+                TituloCartao("Total por dia")
                 GraficoLucro(dias, r.porDia.mapValues { it.value.lucro }, dias.map { e.metas.doDia(it) }, hoje, selecionado) { selecionado = it }
                 val sel = selecionado?.takeIf { r.porDia.containsKey(it) }
                 if (sel != null) {
                     Text("${DataTexto.curta(sel)}: ${Formato.reais(r.porDia.getValue(sel).lucro)}", style = MaterialTheme.typography.titleMedium)
                     BotaoLinha("Abrir este dia", { acoes.mudarFiltro(FiltroRelatorio(ModoRelatorio.DIA, sel)) })
-                } else {
-                    TextoApagado("Toque numa barra para ver o dia.")
                 }
                 TextButton(onClick = { verDias = !verDias }) {
-                    Text(if (verDias) "Esconder valores por dia" else "Ver valores por dia", style = MaterialTheme.typography.labelLarge, color = Cores.Azul)
+                    Text(if (verDias) "Ocultar lançamentos por dia" else "Ver lançamentos por dia", style = MaterialTheme.typography.labelLarge, color = Cores.Azul)
                 }
                 if (verDias) {
                     if (r.porDia.isEmpty()) TextoApagado("Sem lançamentos neste período.")
@@ -156,36 +160,37 @@ fun TelaRelatorios(e: Estado, f: FiltroRelatorio, hoje: LocalDate, posicoes: Mut
                     }
                 }
             }
-            Cartao {
+        }
+
+        BotaoLinha(if (indicadores) "Ocultar indicadores" else "Metas, combustível e outros indicadores", { indicadores = !indicadores })
+        if (indicadores) {
+            if (f.modo != ModoRelatorio.DIA) Cartao {
                 TituloCartao("Metas e média")
                 Par(
                     { m -> Kpi("${r.diasMetaAtingida} de ${r.diasTrabalhados.size}", "dias trabalhados com a meta do dia atingida", m) },
                     { m -> Kpi(r.lucroMedioPorDiaTrabalhado?.let { Formato.reais(it) } ?: "—", "resultado do período por dia trabalhado", m, negativo = (r.lucroMedioPorDiaTrabalhado ?: 0) < 0) },
                 )
             }
-        }
-
-        Cartao {
-            TituloCartao(if (f.modo == ModoRelatorio.DIA) "Conta do dia" else "Conta do período")
-            ContaDoPeriodo(r)
-            if (r.porCategoria.isNotEmpty()) TextoApagado("Outras despesas: " + r.porCategoria.entries.joinToString(" · ") { "${it.key} ${Formato.reais(it.value)}" })
-        }
-
-        Cartao(cor = Cores.CombustivelClaro) {
-            TituloCartao("Combustível no período")
-            Par(
-                { m -> Kpi(Formato.reais(r.combustivel), Textos.abastecimentos(r.qtdAbastecimentos), m, fundo = Cores.Cartao) },
-                { m ->
-                    Kpi(
+            val categorias = r.porCategoria.filterKeys { it != io.github.fomes1574.freteshumberto.core.CATEGORIA_PEDAGIO }
+            if (categorias.isNotEmpty()) Cartao {
+                TituloCartao("Outros gastos por categoria")
+                categorias.forEach { (categoria, valor) -> LinhaConta(categoria, Formato.reais(-valor), negativo = true) }
+            }
+            Cartao(cor = Cores.CombustivelClaro) {
+                TituloCartao("Combustível no período")
+                Par(
+                    { m -> Kpi(Formato.reais(r.combustivel), Textos.abastecimentos(r.qtdAbastecimentos), m, fundo = Cores.Cartao) },
+                    { m -> Kpi(
                         if (r.litrosCentesimos > 0) "${numero(r.litrosCentesimos)} L" else "—",
-                        r.precoMedioLitro?.let { "preço médio ${Formato.reais(it)}/L" } ?: "sem litros informados", m, fundo = Cores.Cartao,
-                    )
-                },
-            )
-            Par(
-                { m -> Kpi(r.percentualTanque?.let { "$it%" } ?: "—", "do valor dos fretes foi para o tanque", m, fundo = Cores.Cartao) },
-                { m -> Kpi(if (r.kmCentesimos > 0) "${numero(r.kmCentesimos)} km" else "—", "anotados nos fretes", m, fundo = Cores.Cartao) },
-            )
+                        r.precoMedioLitro?.let { "${Formato.reais(it)}/L nos registros com litros" } ?: "sem litros informados",
+                        m, fundo = Cores.Cartao,
+                    ) },
+                )
+                Par(
+                    { m -> Kpi(r.percentualTanque?.let { "$it%" } ?: "—", "do valor ganho foi para combustível", m, fundo = Cores.Cartao) },
+                    { m -> Kpi(if (r.kmCentesimos > 0) "${numero(r.kmCentesimos)} km" else "—", "anotados nos fretes", m, fundo = Cores.Cartao) },
+                )
+            }
         }
 
         if (f.modo == ModoRelatorio.DIA) {
@@ -196,24 +201,29 @@ fun TelaRelatorios(e: Estado, f: FiltroRelatorio, hoje: LocalDate, posicoes: Mut
                 if (lista.isEmpty()) TextoApagado("Nada neste dia.")
                 ListaLancamentos(lista, acoes.editar, acoes.apagar)
                 if (!dia.isAfter(hoje)) {
-                    Botao("Anotar frete neste dia", { acoes.novo(Tipo.FRETE, dia) }, icone = R.drawable.ic_mais)
-                    Par(
-                        { m -> Botao("Abasteci", { acoes.novo(Tipo.ABASTECIMENTO, dia) }, m, R.drawable.ic_combustivel, Cores.CombustivelClaro, Cores.Combustivel) },
-                        { m -> Botao("Outra despesa", { acoes.novo(Tipo.DESPESA, dia) }, m, R.drawable.ic_despesa, androidx.compose.ui.graphics.Color(0xFFE7E3D8), Cores.Tinta) },
-                    )
+                    Botao("Anotar frete neste dia", { acoes.novo(Tipo.FRETE, dia, null) }, icone = R.drawable.ic_mais)
+                    AcoesGastos(dia, acoes.novo)
                 }
             }
         }
 
         if (f.modo == ModoRelatorio.MES) {
             val fim = YearMonth.from(p.inicio)
-            val meses = (5 downTo 0).map { fim.minusMonths(it.toLong()) }
-            val totais = meses.map { Relatorio.resumir(e.lancamentos, Datas.mes(it), e.metas).combustivel }
-            Cartao {
-                TituloCartao("Combustível nos últimos 6 meses")
-                GraficoCombustivel(meses, totais)
-                meses.forEachIndexed { i, m ->
-                    LinhaConta(DataTexto.mes(m) + if (m == YearMonth.from(hoje)) " · parcial" else "", Formato.reais(totais[i]))
+            val previstas = remember(e, fim) { ContasDoMes.situacoes(e, fim).filter { it.texto == "Prevista" } }
+            if (previstas.isNotEmpty()) Cartao {
+                TituloCartao("Contas previstas")
+                LinhaConta("Valor previsto", Formato.reais(previstas.sumOf { it.valor }))
+                BotaoLinha("Ver contas do mês", { acoes.contas(fim) })
+            }
+            if (indicadores) {
+                val meses = (5 downTo 0).map { fim.minusMonths(it.toLong()) }
+                val totais = meses.map { Relatorio.resumir(e.lancamentos, Datas.mes(it), e.metas).combustivel }
+                Cartao {
+                    TituloCartao("Combustível nos últimos 6 meses")
+                    GraficoCombustivel(meses, totais)
+                    meses.forEachIndexed { i, m ->
+                        LinhaConta(DataTexto.mes(m) + if (m == YearMonth.from(hoje)) " · parcial" else "", Formato.reais(totais[i]))
+                    }
                 }
             }
         }

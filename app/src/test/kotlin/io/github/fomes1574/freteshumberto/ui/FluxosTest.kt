@@ -103,7 +103,7 @@ class FluxosTest {
     /** Abre o formulário pelo botão da tela Hoje, digita o valor e salva. */
     private fun anotar(botao: String, valor: String) {
         esperar(botao)
-        tocar(botao)
+        tela.onAllNodes(hasText(botao) and hasClickAction())[0].performScrollTo().clicar()
         esperar("Salvar")
         campo(0).performTextInput(valor)
         tocar("Salvar")
@@ -112,15 +112,15 @@ class FluxosTest {
 
     @Test fun `fretes menos combustivel menos despesas da o lucro do dia`() {
         anotar("Anotar frete", "285")
-        anotar("Abasteci", "40")
-        anotar("Outra despesa", "20")
+        anotar("Combustível", "40")
+        anotar("Outro gasto", "20")
         esperar("R$ 225,00")
-        esperar("Faltam R$ 25,00 para a meta")
+        esperar("Faltam R$ 25,00")
     }
 
     @Test fun `apagar frete deixa a despesa e desfazer traz de volta`() {
         anotar("Anotar frete", "80")
-        anotar("Outra despesa", "10")
+        anotar("Outro gasto", "10")
         esperar("R$ 70,00")
         tela.onNodeWithContentDescription("Apagar Frete de R$ 80,00").performScrollTo().clicar()
         esperar("-R$ 10,00")
@@ -135,8 +135,8 @@ class FluxosTest {
     }
 
     @Test fun `calculadora mostra a conta e nao grava nada`() {
-        esperar("Calcular um frete")
-        tocar("Calcular um frete")
+        esperar("Calcular frete")
+        tocar("Calcular frete")
         esperar("Limpar cálculo")
         campo(0).performTextInput("80")
         campo(1).performTextInput("40")
@@ -156,7 +156,7 @@ class FluxosTest {
         tela.onNodeWithText("Histórico").clicar()
         esperar("Ainda não há lançamentos.")
         tela.onNodeWithText("Relatórios").clicar()
-        esperar("LUCRO DA SEMANA")
+        esperar("TOTAL DO TRABALHO")
         tela.onNodeWithText("Ajustes").clicar()
         esperar("Tamanho da letra")
         tocar("A++")
@@ -190,12 +190,12 @@ class FluxosTest {
         esperar("Ajustes salvos.")
         aba("Hoje")
         esperar("Meta R$ 300,00")
-        esperar("Faltam R$ 20,00 para a meta")
+        esperar("Faltam R$ 20,00", parte = true)
         aba("Ajustes")
         esperar("300,00")
         aba("Relatórios")
         tela.onNodeWithText("Dia").clicar()
-        esperar("Faltam R$ 20,00 para a meta")
+        esperar("Faltam R$ 20,00", parte = true)
         aba("Hoje")
         esperar("Meta R$ 300,00")
         // Gravado no banco: ao fechar e abrir o app, continua R$ 300.
@@ -212,7 +212,7 @@ class FluxosTest {
         tocar("Salvar ajustes")
         esperar("Ajustes salvos.")
         aba("Hoje")
-        tocar("Calcular um frete")
+        tocar("Calcular frete")
         esperar("Limpar cálculo")
         esperar("10,00")
         esperar("5,00")
@@ -220,13 +220,14 @@ class FluxosTest {
     }
 
     @Test fun `abastecimento por litros calcula o preco e vira a referencia`() {
-        esperar("Abasteci")
-        tocar("Abasteci")
+        esperar("Combustível")
+        tela.onAllNodes(hasText("Combustível") and hasClickAction())[0].performScrollTo().clicar()
         esperar("Salvar")
         campo(0).performTextInput("200")
-        tocar("quantos litros")
+        tocar("Mais detalhes")
+        tocar("Quantos litros")
         trocar(1, "54,05")
-        esperar("R$ 3,70")
+        esperar("R$ 3,70/L")
         tocar("Salvar")
         esperarSumir("Salvar")
         esperar("54,05 L · R$ 3,70/L")
@@ -273,14 +274,96 @@ class FluxosTest {
 
     @Test fun `relatorio mostra o que foi anotado`() {
         anotar("Anotar frete", "300")
-        anotar("Outra despesa", "50")
+        anotar("Outro gasto", "50")
         aba("Relatórios")
-        esperar("LUCRO DA SEMANA")
+        esperar("TOTAL DO TRABALHO")
         esperar("R$ 250,00")
         esperar("R$ 300,00")
         tela.onNodeWithText("Mês").clicar()
-        esperar("LUCRO DO MÊS")
+        esperar(io.github.fomes1574.freteshumberto.core.DataTexto.mes(java.time.YearMonth.from(Datas.hoje(java.time.Clock.systemUTC()))), parte = true)
         esperar("R$ 250,00")
         esperarSumir("Meta do mês")
+    }
+
+    @Test fun `campo invalido nao grava e pode ser corrigido`() {
+        tocar("Anotar frete")
+        campo(0).performTextInput("1.234")
+        tocar("Salvar")
+        esperar("Confira o valor", parte = true)
+        trocar(0, "-85,50")
+        tocar("Salvar")
+        esperar("Confira o valor", parte = true)
+        val repo = ApplicationProvider.getApplicationContext<FretesApplication>().repositorio
+        org.junit.Assert.assertTrue(runBlocking { repo.carregar().lancamentos }.isEmpty())
+        trocar(0, "85,50")
+        tocar("Salvar")
+        esperar("R$ 85,50")
+    }
+
+    @Test
+    @Config(qualifiers = "w360dp-h740dp")
+    fun `pedagio rapido sinaliza coincidencia e permite editar com letra A mais mais`() {
+        aba("Ajustes")
+        tocar("A++")
+        aba("Hoje")
+        val atalho = { tela.onAllNodes(hasText("Pedágio") and hasClickAction())[0].performScrollTo().clicar() }
+        atalho()
+        campo(0).performTextInput("18")
+        tocar("Salvar")
+        esperarSumir("Salvar")
+        atalho()
+        campo(0).performTextInput("18")
+        tocar("Salvar")
+        esperar("Já existe um pedágio deste valor neste dia.")
+        tocar("Salvar mesmo assim")
+        esperar("− R$ 36,00")
+        val repo = ApplicationProvider.getApplicationContext<FretesApplication>().repositorio
+        val lista = runBlocking { repo.carregar().lancamentos }
+        org.junit.Assert.assertEquals(listOf("Pedágio", "Pedágio"), lista.map { it.categoria })
+        tela.onAllNodes(hasText("Despesa") and hasClickAction())[0].clicar()
+        esperar("Corrigir lançamento")
+        trocar(0, "20")
+        tocar("Salvar")
+        esperar("− R$ 38,00")
+    }
+
+    @Test
+    @Config(qualifiers = "w360dp-h780dp")
+    @org.robolectric.annotation.GraphicsMode(org.robolectric.annotation.GraphicsMode.Mode.NATIVE)
+    fun `visual das telas principais com fonte ampliada`() {
+        val pasta = System.getenv("FRETES_VISUAL_DIR")?.let { java.io.File(it) }
+        fun capturar(nome: String) {
+            val imagem = tela.runOnIdle {
+                val janela = tela.activity.window.decorView
+                android.graphics.Bitmap.createBitmap(janela.width, janela.height, android.graphics.Bitmap.Config.ARGB_8888).also {
+                    janela.draw(android.graphics.Canvas(it))
+                }
+            }
+            org.junit.Assert.assertTrue(imagem.width > 0 && imagem.height > 0)
+            pasta?.let {
+                it.mkdirs()
+                java.io.File(it, "$nome.png").outputStream().use { fluxo ->
+                    org.junit.Assert.assertTrue(imagem.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, fluxo))
+                }
+            }
+        }
+        anotar("Anotar frete", "285")
+        anotar("Combustível", "60")
+        anotar("Pedágio", "18")
+        aba("Ajustes")
+        tocar("A++")
+        aba("Hoje")
+        esperar("TOTAL DO TRABALHO")
+        esperar("R$ 207,00")
+        capturar("android-hoje-a3")
+        tocar("Anotar frete")
+        esperar("Valor ganho")
+        campo(0).performTextInput("85,50")
+        capturar("android-frete-a3")
+        tocar("Salvar")
+        esperarSumir("Salvar")
+        aba("Relatórios")
+        esperar("TOTAL DO TRABALHO")
+        capturar("android-relatorios-a3")
     }
 }

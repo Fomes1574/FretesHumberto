@@ -29,11 +29,12 @@ object ContasDoMes {
         val o = e.diario.ocorrencias[Ocorrencia.chave(c.id, mes)]
         val l = o?.lancamentoId?.let { id -> e.lancamentos.firstOrNull { it.id == id } }
         val data = l?.data ?: o?.alteracao?.data ?: Recorrencias.vencimento(mes, v.dia)
+        if (l == null && data.isBefore(c.inicio) && o?.status != StatusOcorrencia.PULADA) return@mapNotNull null
         val texto = when {
             o?.status == StatusOcorrencia.PULADA -> "Pulada neste mês"
             l != null -> "Lançada"
-            !v.ativa -> "Repetição pausada"
             v.fim != null && data.isAfter(v.fim) -> "Repetição encerrada"
+            !v.ativa && (o?.alteracao == null || o.status == StatusOcorrencia.PREVISTA_PAUSADA) -> "Repetição pausada"
             else -> "Prevista"
         }
         SituacaoConta(
@@ -69,12 +70,20 @@ object ContasDoMes {
         val alt = AlteracaoMes(Recorrencias.vencimento(mes, dia), valor, nome.trim(), CATEGORIA_CONTA)
         var di = e.diario
         val o = di.ocorrencias[chave]
+        val conta = e.contas.first { it.id == contaId }
         val l = o?.lancamentoId?.let { id -> di.lancamentos.firstOrNull { it.id == id } }
-        if (l != null && !alt.data.isAfter(hoje)) {
+        if (l != null && alt.data in conta.inicio..hoje) {
             di = di.salvar(l.copy(data = alt.data, valor = alt.valor, descricao = alt.descricao, categoria = alt.categoria, editadoEm = agora.ifEmpty { null }))
         } else {
             if (l != null) di = di.removerSemPular(l.id)
-            di = di.comOcorrencia(Ocorrencia(contaId, mes, StatusOcorrencia.PREVISTA, null, alt))
+            val ativa = conta.versaoEm(mes)?.ativa == true
+            val status = when {
+                o?.status == StatusOcorrencia.PULADA -> StatusOcorrencia.PULADA
+                !ativa && (o?.alteracao == null || o.status == StatusOcorrencia.PREVISTA_PAUSADA) ->
+                    StatusOcorrencia.PREVISTA_PAUSADA
+                else -> StatusOcorrencia.PREVISTA
+            }
+            di = di.comOcorrencia(Ocorrencia(contaId, mes, status, null, alt))
         }
         return e.copy(diario = di).gerarContas(hoje, novoId, agora)
     }
@@ -88,7 +97,7 @@ object ContasDoMes {
         hoje: LocalDate, novoId: () -> String, agora: String = "",
     ): Estado {
         val c = e.contas.first { it.id == contaId }
-        val nova = c.copy(versoes = c.versoes.filter { it.desde.isBefore(mes) } + VersaoConta(mes, nome.trim(), valor, dia, true, CATEGORIA_CONTA, fim))
+        val nova = c.copy(versoes = c.versoes.filter { it.desde.isBefore(mes) } + VersaoConta(mes, nome.trim(), valor, dia, c.versaoEm(mes)?.ativa == true, CATEGORIA_CONTA, fim))
         var di = e.diario
         for (o in di.ocorrencias.values.filter { it.contaId == contaId && !it.mes.isBefore(mes) }) {
             if (o.status == StatusOcorrencia.PULADA || o.alteracao != null) continue
@@ -96,7 +105,7 @@ object ContasDoMes {
             val v = nova.versaoEm(o.mes) ?: continue
             if (!v.ativa) continue
             val d = Recorrencias.vencimento(o.mes, v.dia)
-            if (d.isAfter(hoje) || (v.fim != null && d.isAfter(v.fim))) {
+            if (d !in c.inicio..hoje || (v.fim != null && d.isAfter(v.fim))) {
                 di = di.removerSemPular(l.id).comOcorrencia(Ocorrencia(contaId, o.mes, StatusOcorrencia.PREVISTA))
             } else {
                 di = di.salvar(l.copy(data = d, valor = v.valor, descricao = v.nome, categoria = v.categoria, editadoEm = agora.ifEmpty { null }))
@@ -122,7 +131,7 @@ object ContasDoMes {
             return e.copy(diario = di).gerarContas(hoje, novoId, agora)
         }
         o?.lancamentoId?.let { di = di.removerSemPular(it) }
-        di = di.comOcorrencia(Ocorrencia(contaId, mes, StatusOcorrencia.PULADA))
+        di = di.comOcorrencia(Ocorrencia(contaId, mes, StatusOcorrencia.PULADA, alteracao = o?.alteracao))
         return e.copy(diario = di)
     }
 

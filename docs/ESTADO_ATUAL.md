@@ -2,6 +2,10 @@
 
 Revisão: 30/10/2026 (tarde). Protótipo web de 29/10/2026 + **app Android com as telas, o banco, as contas do mês e a cópia de segurança**. Tudo compila e passa nos testes da JVM no GitHub Actions, que gera o APK debug. **O app ainda não foi aberto num celular**: nada do que depende do aparelho foi conferido (toque, teclado, TalkBack, arquivo físico da cópia, WorkManager rodando com o app fechado, atualização por cima).
 
+## Revisão beta de 18/11/2026
+
+Hoje e Relatórios usam o mesmo quadro financeiro. Pedágio tem atalho e linha própria. Combustível aceita só o valor gasto, com detalhes opcionais. A Fiorino acompanha a meta diária. Contas previstas aparecem no relatório mensal em separado. A leitura de cópias do Android aceita formatos 1 a 3. O esquema Room permanece na versão 2.
+
 ## Implementado versus previsto
 
 | Área | Protótipo atual | Android |
@@ -9,11 +13,11 @@ Revisão: 30/10/2026 (tarde). Protótipo web de 29/10/2026 + **app Android com a
 | Hoje, Histórico, Relatórios, Ajustes | Implementados em HTML/JS | Implementados em Compose (`ui/`); testados na JVM, não no aparelho |
 | Fretes, abastecimentos e despesas independentes | Implementados | Implementados; banco sem coluna que ligue gasto a frete |
 | Calculadora isolada | Implementada, sem gravação no diário | Implementada com estado só da tela (`ui/lancamento/TelaCalculadora.kt`) |
-| Metas | Diária com vigência e mensal por mês | **Só diária** (mensal retirada em 30/10/2026); vale do dia em que mudou em diante (`meta_diaria`) |
+| Metas | Só diária, com vigência | **Só diária** (mensal retirada em 30/10/2026); vale do dia em que mudou em diante (`meta_diaria`) |
 | Dia, semana, mês, personalizado e dois dias | Implementados | Implementados (`ui/relatorios/`, `core/Textos.kt`) |
 | Recorrências com versões, exceções e mês pulado | Implementadas ao abrir/retomar | Implementadas: abertura do app + WorkManager a cada 12 h, mesma função idempotente |
 | Gráficos e estrada/Fiorino | SVG/JS | Compose Canvas (`ui/relatorios/Graficos.kt`, `ui/estrada/CenaEstrada.kt`) |
-| Desfazer exclusão | Implementado (o protótipo também tem conferência de dia) | Desfazer por 6 s; **sem conferência de dia** (retirada em 30/10/2026) |
+| Desfazer exclusão | Implementado | Desfazer por 6 s; **sem conferência de dia** (retirada em 30/10/2026) |
 | Cópia validada e senha opcional | Implementadas; salvamento físico não confirmado na automação | Implementadas com o seletor de arquivos; gravação conferida lendo de volta; **não testado no aparelho** |
 | Armazenamento | `localStorage` do navegador | Room (esquema v1 versionado) + DataStore; backup do Google no manifesto |
 | A/A+/A++ | Implementados; inspeção em largura de celular | Implementados; escala do Android, TalkBack e teclado não conferidos no aparelho |

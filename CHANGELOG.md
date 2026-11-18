@@ -1,5 +1,14 @@
 # Histórico de alterações
 
+## 0.2.0 — 18/11/2026
+
+- Quadro de valores alinhados, com ganhos verdes, gastos vermelhos e total branco.
+- Pedágio rápido, abastecimento só com valor e detalhes editáveis. Relatório mensal mostra contas previstas.
+- Correções da validação do valor colado, de pausa e pulo de recorrências e de restauração atômica no Android.
+- Na web, gravações entre abas, dia de Brasília e recuperação local da base anterior à restauração.
+- Cópia Android v3 mantém leitura das antigas. O esquema Room permanece v2.
+
+
 ## 30/10/2026 (noite) — Só meta diária, dia de Brasília e correção da atualização das telas
 
 - **Meta mensal retirada de tudo** (Ajustes, Relatórios, resumo do WhatsApp, banco e cópia). Fica só a meta diária: mudar vale para o dia em que mudou e os seguintes; dias passados mantêm a meta que tinham.

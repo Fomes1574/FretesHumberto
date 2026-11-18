@@ -92,12 +92,7 @@ data class FiltroRelatorio(
         }
     }
 
-    fun titulo(): String = when (modo) {
-        ModoRelatorio.DIA -> "LUCRO DO DIA"
-        ModoRelatorio.SEMANA -> "LUCRO DA SEMANA"
-        ModoRelatorio.MES -> "LUCRO DO MÊS"
-        else -> "LUCRO DO PERÍODO"
-    }
+
 }
 
 object Textos {
@@ -121,10 +116,12 @@ object Textos {
         val p = filtro.intervalo()
         val meta = if (filtro.modo == ModoRelatorio.DIA) "\nMeta do dia: ${Formato.reais(metas.doDia(p.inicio))}" else ""
         return "Meus Fretes — ${filtro.rotulo()}\n" +
-            "Fretes: ${Formato.reais(r.fretes)} (${r.qtdFretes})\n" +
+            "Valor ganho: ${Formato.reais(r.fretes)}\n" +
+            "Valor gasto: ${Formato.reais(r.gastos)}\n" +
             "Combustível: ${Formato.reais(r.combustivel)}\n" +
-            "Outras despesas: ${Formato.reais(r.outras)}\n" +
-            "Lucro: ${Formato.reais(r.lucro)}$meta"
+            "Pedágio: ${Formato.reais(r.pedagio)}\n" +
+            "Outros gastos: ${Formato.reais(r.outras - r.pedagio)}\n" +
+            "Total do trabalho: ${Formato.reais(r.lucro)}$meta"
     }
 
     fun fretes(n: Int) = "$n frete${if (n == 1) "" else "s"}"

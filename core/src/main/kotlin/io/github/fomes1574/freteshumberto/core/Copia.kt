@@ -39,8 +39,9 @@ class CopiaInvalida(val mensagem: String) : Exception(mensagem)
 object Copia {
     const val FORMATO = "meus-fretes"
     const val FORMATO_CIFRADO = "meus-fretes-cifrado"
-    /** Versão 2: sem meta mensal e sem conferência de dia (30/10/2026). A versão 1 ainda é lida. */
-    const val VERSAO = 2
+    /** Versão 3: abastecimento sem detalhes e ajuste de conta sem retomar a pausa. */
+    const val VERSAO = 3
+    const val LIMITE_BYTES = 50 * 1024 * 1024
     const val ITERACOES = 210_000
     private const val MAX_LANCAMENTOS = 200_000
     private const val MAX_CONTAS = 500
@@ -50,6 +51,7 @@ object Copia {
     // ---------------------------------------------------------------- gravar
 
     fun paraJson(e: Estado, criadoEm: String): String {
+        validarQuantidades(e.lancamentos.size, e.contas.size)
         val raiz = buildJsonObject {
             put("formato", FORMATO)
             put("versao", VERSAO)
@@ -149,7 +151,7 @@ object Copia {
 
     private fun ler(raiz: JsonObject): Estado {
         val lancs = lista(raiz, "lancamentos")
-        if (lancs.size > MAX_LANCAMENTOS) throw CopiaInvalida("A cópia tem lançamentos demais.")
+        validarQuantidades(lancs.size, lista(raiz, "contas").size)
         val ids = HashSet<String>()
         val lancamentos = lancs.map { el ->
             val o = obj(el, "lançamento")
@@ -183,7 +185,6 @@ object Copia {
         val metas = Metas(diarias.sortedBy { it.desde })
 
         val contasJson = lista(raiz, "contas")
-        if (contasJson.size > MAX_CONTAS) throw CopiaInvalida("A cópia tem contas do mês demais.")
         val contaIds = HashSet<String>()
         val contas = contasJson.map { el ->
             val o = obj(el, "conta")
@@ -209,7 +210,7 @@ object Copia {
             val o = obj(el, "ocorrência")
             val alt = (o["alteracao"] as? JsonObject)?.let { a ->
                 AlteracaoMes(data(texto(a, "data")), positivo(longo(a, "valor"), "Alteração mensal inválida."),
-                    texto(a, "descricao")?.takeIf { it.length <= 160 } ?: throw CopiaInvalida("Alteração mensal inválida."),
+                    texto(a, "descricao")?.takeIf { it.length <= 1000 } ?: throw CopiaInvalida("Alteração mensal inválida."),
                     texto(a, "categoria") ?: throw CopiaInvalida("Alteração mensal inválida."))
             }
             Ocorrencia(
@@ -240,6 +241,11 @@ object Copia {
             precoManual = Combustivel.ReferenciaManual(data(texto(pm, "data")), positivo(longo(pm, "preco"), "Referência de preço inválida."), texto(pm, "carimbo") ?: ""),
         )
         return Estado(Diario(lancamentos, occ), contas, metas, ajustes)
+    }
+
+    private fun validarQuantidades(lancamentos: Int, contas: Int) {
+        if (lancamentos > MAX_LANCAMENTOS) throw CopiaInvalida("A cópia tem lançamentos demais.")
+        if (contas > MAX_CONTAS) throw CopiaInvalida("A cópia tem contas do mês demais.")
     }
 
     private fun texto(o: JsonObject, campo: String): String? {

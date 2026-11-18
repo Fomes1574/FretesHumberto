@@ -6,15 +6,9 @@ import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -41,7 +35,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import io.github.fomes1574.freteshumberto.core.Estrada
-import io.github.fomes1574.freteshumberto.core.Formato
 import io.github.fomes1574.freteshumberto.ui.theme.Atkinson
 import io.github.fomes1574.freteshumberto.ui.theme.Cores
 import kotlinx.coroutines.launch
@@ -62,7 +55,7 @@ private const val CONFETE_MS = 5000
  * [posicoes] guarda onde a van parou em cada cena ([chave]), para voltar à aba sem animar de novo.
  */
 @Composable
-fun CenaEstrada(lucro: Long, meta: Long, chave: String, posicoes: MutableMap<String, Float>, rotuloMeta: String) {
+fun CenaEstrada(lucro: Long, meta: Long, chave: String, posicoes: MutableMap<String, Float>) {
     val contexto = LocalContext.current
     val semMovimento = remember {
         Settings.Global.getFloat(contexto.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
@@ -94,34 +87,28 @@ fun CenaEstrada(lucro: Long, meta: Long, chave: String, posicoes: MutableMap<Str
     val descricao = if (meta <= 0 || lucro >= meta) "Estrada da meta: a van passou da linha de chegada. Meta atingida."
     else "Estrada da meta: a van percorreu ${((lucro.coerceAtLeast(0) * 100) / meta)}% do caminho até a meta."
 
-    Column {
-        Canvas(
-            Modifier.fillMaxWidth().aspectRatio(Estrada.LARGURA / Estrada.ALTURA).clip(RoundedCornerShape(14.dp))
-                .semantics { contentDescription = descricao },
-        ) {
-            val s = size.width / Estrada.LARGURA
-            val pos = x.value
-            val estrada = pos * VELOCIDADE_ESTRADA
-            // Graus por quadro (60 qps) para decidir o borrão das rodas.
-            val grausQuadro = abs(x.velocity) * VELOCIDADE_ESTRADA / RAIO_RODA * (180f / PI.toFloat()) / 60f
-            withTransform({ scale(s, s, Offset.Zero) }) {
-                fundo(estrada)
-                pista(estrada, pos)
-                chegada()
-                van(pos - Estrada.COMPRIMENTO_VAN, estrada / RAIO_RODA * (180f / PI.toFloat()), Estrada.opacidadeBorrao(grausQuadro))
-                if (confete.value < 1f) confetes(confete.value)
-            }
-            // Placa "META" fora da escala, para o texto ficar nítido.
-            val estilo = TextStyle(fontFamily = Atkinson, fontWeight = FontWeight.Bold, color = Color.White, fontSize = (8.5f * s).toSp())
-            val medida = medidor.measure("META", estilo)
-            drawRoundRect(Cores.Verde, Offset(234f * s, 40f * s), Size(40f * s, 15f * s), CornerRadius(4f * s))
-            drawText(medida, topLeft = Offset(254f * s - medida.size.width / 2f, 47.5f * s - medida.size.height / 2f))
+    val corte = 34f
+    Canvas(
+        Modifier.fillMaxWidth().aspectRatio(Estrada.LARGURA / (Estrada.ALTURA - corte)).clip(RoundedCornerShape(14.dp))
+            .semantics { contentDescription = descricao },
+    ) {
+        val s = size.width / Estrada.LARGURA
+        val pos = x.value
+        val estrada = pos * VELOCIDADE_ESTRADA
+        // Graus por quadro (60 qps) para decidir o borrão das rodas.
+        val grausQuadro = abs(x.velocity) * VELOCIDADE_ESTRADA / RAIO_RODA * (180f / PI.toFloat()) / 60f
+        withTransform({ translate(top = -corte * s); scale(s, s, Offset.Zero) }) {
+            fundo(estrada)
+            pista(estrada, pos)
+            chegada()
+            van(pos - Estrada.COMPRIMENTO_VAN, estrada / RAIO_RODA * (180f / PI.toFloat()), Estrada.opacidadeBorrao(grausQuadro))
+            if (confete.value < 1f) confetes(confete.value)
         }
-        Spacer(Modifier.height(4.dp))
-        Row(Modifier.fillMaxWidth()) {
-            Text("R$ 0", style = MaterialTheme.typography.bodyMedium, color = Cores.Apagado, modifier = Modifier.weight(1f))
-            Text(rotuloMeta, style = MaterialTheme.typography.bodyMedium, color = Cores.Apagado)
-        }
+        // Placa "META" fora da escala, para o texto ficar nítido.
+        val estilo = TextStyle(fontFamily = Atkinson, fontWeight = FontWeight.Bold, color = Color.White, fontSize = (8.5f * s).toSp())
+        val medida = medidor.measure("META", estilo)
+        drawRoundRect(Cores.Verde, Offset(234f * s, (40f - corte) * s), Size(40f * s, 15f * s), CornerRadius(4f * s))
+        drawText(medida, topLeft = Offset(254f * s - medida.size.width / 2f, (47.5f - corte) * s - medida.size.height / 2f))
     }
 }
 
@@ -259,4 +246,3 @@ private fun DrawScope.confetes(p: Float) {
 }
 
 /** Rótulo "Meta R$ 250,00" do lado direito da estrada. */
-fun rotuloMeta(meta: Long, prefixo: String = "Meta") = "$prefixo ${Formato.reais(meta)}"

@@ -27,7 +27,7 @@ data class ContaMensal(val id: String, val inicio: LocalDate, val versoes: List<
     fun versaoEm(m: YearMonth): VersaoConta? = versoes.filter { !it.desde.isAfter(m) }.maxByOrNull { it.desde }
 }
 
-enum class StatusOcorrencia { PREVISTA, GERADA, PULADA }
+enum class StatusOcorrencia { PREVISTA, GERADA, PULADA, PREVISTA_PAUSADA }
 
 /** Alteração feita só naquele mês ("Só este mês"). */
 data class AlteracaoMes(val data: LocalDate, val valor: Long, val descricao: String, val categoria: String)
@@ -81,7 +81,7 @@ object Recorrencias {
                 val chave = Ocorrencia.chave(c.id, m)
                 val v = c.versaoEm(m)
                 val o = occ[chave]
-                if (v != null && (v.ativa || o?.alteracao != null) &&
+                if (v != null && (v.ativa || (o?.alteracao != null && o.status != StatusOcorrencia.PREVISTA_PAUSADA)) &&
                     o?.status != StatusOcorrencia.PULADA && o?.status != StatusOcorrencia.GERADA
                 ) {
                     val data = o?.alteracao?.data ?: vencimento(m, v.dia)

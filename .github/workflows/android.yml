@@ -82,6 +82,23 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cp app/build/outputs/apk/debug/app-debug.apk MeusFretes.apk
+          # Um cache ausente pode gerar outra chave. Confira o certificado do APK
+          # publicado antes de substituir o link que os usuários usam para atualizar.
+          anterior=$(mktemp -d)
+          gh release download meus-fretes --pattern MeusFretes.apk --dir "$anterior"
+          apksigner="$ANDROID_HOME/build-tools/36.0.0/apksigner"
+          assinatura() {
+            "$apksigner" verify --print-certs "$1" | sed -n 's/^Signer #[0-9]* certificate SHA-256 digest: //p' | sort
+          }
+          antiga=$(assinatura "$anterior/MeusFretes.apk")
+          nova=$(assinatura MeusFretes.apk)
+          [[ -n "$antiga" && -n "$nova" ]]
+          if [[ "$antiga" != "$nova" ]]; then
+            echo "::warning::A chave do APK mudou. O link de atualização anterior foi preservado."
+            cp MeusFretes.apk MeusFretes-nova-instalacao.apk
+            gh release upload meus-fretes MeusFretes-nova-instalacao.apk --clobber
+            exit 0
+          fi
           cat > notas.md <<NOTAS
           Meus Fretes, gerado automaticamente do commit \`${GITHUB_SHA::7}\` em $(TZ=America/Sao_Paulo date '+%d/%m/%Y %H:%M') (horário de Brasília).
 

@@ -37,3 +37,22 @@ test('cópia sem senha preserva estado e recorrências',async()=>{const s=state(
 test('cópia protegida valida senha e integridade',async()=>{const s=state();const t=await bc.encodeBackup(s,'senha de teste');assert.equal((await bc.decodeBackup(t,'senha de teste')).version,3);await assert.rejects(()=>bc.decodeBackup(t,'outra senha'));const j=JSON.parse(t);j.ciphertext=j.ciphertext.slice(0,-4)+'AAAA';await assert.rejects(()=>bc.decodeBackup(JSON.stringify(j),'senha de teste'))});
 test('não existe caminho de salvar calculadora no diário nem rendimento incorreto',()=>{assert.ok(!app.includes("a==='calcSave'"));assert.ok(!app.includes('lucro/o.km'));assert.ok(!app.includes('lucro/(o.min'));assert.ok(!app.includes('Ainda não recebi'))});
 test('cópia com senha funciona offline sem WebCrypto e é compatível com ele',async()=>{const fallback={crypto:{getRandomValues:a=>webcrypto.getRandomValues(a)},TextEncoder,TextDecoder,Uint8Array,JSON,btoa,atob,Core:C,setTimeout};vm.runInNewContext(fs.readFileSync('src/backup-crypto.bundle.js','utf8')+'\n'+backupFns+';this.encodeBackup=encodeBackup;this.decodeBackup=decodeBackup',fallback);const s=state();const native=await bc.encodeBackup(s,'teste de interoperabilidade');assert.equal((await fallback.decodeBackup(native,'teste de interoperabilidade')).version,3);const pure=await fallback.encodeBackup(s,'teste de interoperabilidade');assert.equal((await bc.decodeBackup(pure,'teste de interoperabilidade')).version,3);await assert.rejects(()=>fallback.decodeBackup(pure,'senha errada'))});
+
+test('abastecimento sem detalhe preserva o valor, a referência e a base da média',()=>{
+ const s=C.defaults();
+ s.lanc.push(
+  {id:'a',tipo:'abast',data:'2026-11-17',valor:6000,litros100:1500,preco:400,desc:''},
+  {id:'b',tipo:'abast',data:'2026-11-18',valor:4000,desc:''}
+ );
+ const dados=C.normalize(s),r=C.summary(dados,'2026-11-17','2026-11-18');
+ assert.equal(r.comb,10000);
+ assert.equal(r.combComLitros,6000);
+ assert.equal(r.litros100,1500);
+ assert.equal(C.price(dados),400);
+});
+
+test('data financeira segue Brasília e simulação rejeita combinação extrema',()=>{
+ assert.equal(C.hoje(new Date('2026-11-18T01:30:00Z')),'2026-11-17');
+ assert.equal(C.hoje(new Date('2026-11-18T03:00:00Z')),'2026-11-18');
+ assert.equal(C.calc({fare:C.MAX,km100:C.MAX,kml100:1,price:C.MAX}),null);
+});

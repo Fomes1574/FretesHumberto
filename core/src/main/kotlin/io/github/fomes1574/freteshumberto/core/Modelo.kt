@@ -10,6 +10,7 @@ enum class ModoAbastecimento { PRECO, LITROS }
 val CATEGORIAS = listOf("Pedágio", "Manutenção", "Estacionamento", "Lavagem", "Multa", "Conta mensal", "Outros")
 
 const val CATEGORIA_CONTA = "Conta mensal"
+const val CATEGORIA_PEDAGIO = "Pedágio"
 
 /**
  * Um lançamento do diário. Os três tipos são independentes (R01): nenhum frete
@@ -45,7 +46,10 @@ data class Lancamento(
         require(minutos == null || minutos >= 0) { "Duração inválida" }
         require(kmCentesimos == null || kmCentesimos >= 0) { "Distância inválida" }
         if (tipo == Tipo.ABASTECIMENTO) {
-            require((litrosCentesimos ?: 0) > 0 && (precoLitro ?: 0) > 0) { "Abastecimento precisa de litros e preço" }
+            require(
+                if (litrosCentesimos == null && precoLitro == null) modoAbastecimento == null
+                else (litrosCentesimos ?: 0) > 0 && (precoLitro ?: 0) > 0,
+            ) { "Abastecimento com detalhes precisa de litros e preço" }
         }
     }
 }

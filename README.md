@@ -2,7 +2,7 @@
 
 Controle simples de fretes, abastecimentos, despesas e metas para um motorista Android com pouca familiaridade com tecnologia. O foco é anotar os valores e ver quanto sobrou no dia, com histórico e relatórios fáceis de consultar.
 
-**Situação em 30/10/2026: protótipo web pronto e app Android com as funções principais.** Banco, telas, contas do mês e cópia de segurança estão no `app/` e passam nos testes do CI, que gera o APK debug. **Ainda não foi testado num celular nem há APK assinado para o motorista.** Para programar com o Claude Code, comece pelo [CLAUDE.md](CLAUDE.md).
+**Versão 0.2.0, em 18/11/2026.** Banco, telas, contas do mês e cópia de segurança estão no `app/` e passam nos testes do CI, que gera o APK debug. **Ainda não foi testado num celular nem há APK assinado para o motorista.** Para programar com o Claude Code, comece pelo [CLAUDE.md](CLAUDE.md).
 
 [![Android](https://github.com/Fomes1574/FretesHumberto/actions/workflows/android.yml/badge.svg)](https://github.com/Fomes1574/FretesHumberto/actions/workflows/android.yml)
 
@@ -58,7 +58,7 @@ JDK 17 e Android Studio (ou só o SDK). Na raiz:
 ./gradlew :app:assembleDebug    # APK debug em app/build/outputs/apk/debug/
 ```
 
-**Baixar o app (link direto):** [MeusFretes.apk](https://github.com/Fomes1574/FretesHumberto/releases/download/meus-fretes/MeusFretes.apk) (página [Releases → Meus Fretes](https://github.com/Fomes1574/FretesHumberto/releases/tag/meus-fretes)). É republicado a cada atualização do `main`, com a mesma chave, para instalar por cima sem perder os dados; o link não muda.
+**Baixar o app (link direto):** [MeusFretes.apk](https://github.com/Fomes1574/FretesHumberto/releases/download/meus-fretes/MeusFretes.apk) (página [Releases → Meus Fretes](https://github.com/Fomes1574/FretesHumberto/releases/tag/meus-fretes)). O CI confere o certificado antes de substituir o APK de atualização. Se a chave mudar, mantém o arquivo anterior e publica o novo como `MeusFretes-nova-instalacao.apk`.
 
 O GitHub Actions roda os testes e gera o APK debug a cada push (aba **Actions** → artefato `meus-fretes-debug`). O APK para o celular do motorista sai assinado na página **Releases** quando uma tag `v*` é enviada — veja [CHAVE_ASSINATURA.md](docs/CHAVE_ASSINATURA.md).
 
@@ -85,7 +85,7 @@ Edite `src/` e regenere `docs/prototipo.html`. O gerador aproveita CSS, ícones,
 
 ## Situação dos testes
 
-Os 32 testes automatizados passam. A interface foi revisada no navegador em 29/10/2026, incluindo restauração com senha e letra ampliada. No Android, os testes rodam na JVM (regras, banco e fluxos de tela com Robolectric) e o APK debug é gerado no CI; **nenhum teste em celular foi feito**. O salvamento físico do arquivo de backup não foi confirmado na automação e precisa de teste completo no aparelho. A recorrência atual funciona ao abrir/retomar a página, sem execução com navegador fechado.
+A interface foi testada no Chromium em 360 e 412 px, com A++ e restauração reversível. No Android, os testes rodam na JVM (regras, banco e fluxos de tela com Robolectric) e o APK debug é gerado no CI; **nenhum teste em celular foi feito**. O salvamento físico do arquivo de backup não foi confirmado na automação e precisa de teste completo no aparelho. A recorrência atual funciona ao abrir/retomar a página, sem execução com navegador fechado.
 
 O workflow de build roda a cada push e está verde. Não há integração com a Lalamove nem serviços de nuvem. Exportação CSV/PDF, biometria, manutenção por km e sincronização ainda não foram implementadas.
 

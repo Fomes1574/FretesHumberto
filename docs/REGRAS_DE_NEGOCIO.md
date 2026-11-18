@@ -31,7 +31,7 @@ Fretes R$ 285 − combustível R$ 40 − despesas R$ 20 = **R$ 225**. Com meta R
 - Valores de lançamentos são positivos; o tipo define entrada ou saída. Resultados podem ser negativos.
 - Data financeira local sem horário: `AAAA-MM-DD`. Criação/edição técnica tem timestamp separado.
 - **O dia vira às 00:00 pelo horário de Brasília** (`America/Sao_Paulo`), mesmo se o celular estiver em outro fuso. Depois da meia-noite, "hoje" é um dia novo, sem fretes nem despesas; os do dia anterior ficam no Histórico.
-- Novos lançamentos começam em hoje, sem data financeira futura. Campos adicionais dependem do tipo: abastecimento exige preço ou litros; recorrência exige nome e repetição.
+- Novos lançamentos começam em hoje, sem data financeira futura. Campos adicionais dependem do tipo: no abastecimento, o valor gasto é obrigatório e preço por litro ou litros são opcionais. Recorrência exige nome e repetição.
 - Edição sem prazo de expiração. Qualquer lançamento antigo pode ser corrigido. Duração opcional em minutos inteiros: abrir/salvar 17 minutos mantém 17.
 
 ## R04 — Combustível
@@ -41,13 +41,13 @@ Abastecimento sai integralmente no dia em que foi cadastrado financeiramente, me
 ```text
 litros = valor pago ÷ preço por litro
 preço por litro = valor pago ÷ litros
-preço médio do período = soma dos valores pagos ÷ soma dos litros
+preço médio do período = valores pagos com litros informados ÷ litros informados
 percentual para o tanque = combustível ÷ fretes × 100
 ```
 
 R$ 200 ÷ R$ 3,70 = **54,05 L**; R$ 200 ÷ 54,05 L = **R$ 3,70/L**, arredondados. Sem litros ou fretes, omitir indicador correspondente em vez de dividir por zero.
 
-Guardar os dados de cada abastecimento. A referência de preço vem do mais recente por **data financeira**, com desempate técnico; lançamento antigo não pode tomar o lugar do mais novo. Editar/excluir o mais novo reavalia a referência. Ajustes aceita referência manual, sem alterar registros antigos. A precedência concreta atual está em `Core.price`.
+Guardar o valor mesmo sem informar litros ou preço. A referência vem do abastecimento com preço mais recente por **data financeira**, com desempate técnico; lançamento antigo não pode tomar o lugar do mais novo. Editar/excluir o mais novo reavalia a referência. Ajustes aceita referência manual, sem alterar registros antigos. A precedência concreta atual está em `Core.price`.
 
 ## R05 — Calculadora isolada
 
@@ -111,9 +111,9 @@ Unicidade por **recorrência+mês**. Abrir, retomar, restaurar e repetir agendam
 
 | Ação | Efeito |
 |---|---|
-| Só este mês | Exceção naquela ocorrência, preservando as demais |
-| Deste mês em diante | Nova versão da regra desde o mês selecionado; preservar anteriores e exceções individuais |
-| Pular este mês | Não lançar, ou retirar só a ocorrência existente, guardando que foi pulada |
+| Só este mês | Exceção naquela ocorrência, preservando as demais e mantendo o pulo ou a pausa até retomar |
+| Deste mês em diante | Nova versão desde o mês selecionado, preservando as anteriores, as exceções e a pausa |
+| Pular este mês | Retira ou impede a despesa daquele mês e guarda a alteração individual para a retomada |
 | Excluir despesa gerada | Pular aquela ocorrência para não ser recriada; manter regra e outros meses |
 | Desfazer | Restaurar exatamente a ocorrência removida, sem duplicação |
 | Pausar | Parar futuras gerações na vigência escolhida, preservando despesas já lançadas |
@@ -127,9 +127,9 @@ Dados no aparelho. Arquivo `.fretes` exportado manualmente, senha opcional e lem
 
 Cópia preserva lançamentos, IDs, detalhes, metas diárias históricas, versões de recorrência, exceções e meses pulados. Validar formato, versão, tipos, datas, limites, duplicidades e integridade antes de substituir. Falha mantém estado anterior.
 
-Protótipo: AES-256-GCM, PBKDF2-SHA256 com 210 mil iterações, salt aleatório de 16 bytes e IV de 12 bytes. WebCrypto ou implementação incorporada compatível. Senha não é salva e não tem recuperação. Cópia sem senha é legível; a cópia preventiva da restauração é sem senha e a tela informa isso.
+Protótipo: AES-256-GCM, PBKDF2-SHA256 com 210 mil iterações, salt aleatório de 16 bytes e IV de 12 bytes. WebCrypto ou implementação incorporada compatível. Senha não é salva e não tem recuperação. Cópia sem senha é legível; a base anterior é guardada localmente antes da restauração e pode ser recuperada em Ajustes.
 
-“Última cópia” no HTML registra a ação de exportar, não confirma que o arquivo foi guardado. No Android, verificar resultado do seletor/stream antes de afirmar gravação concluída. O download físico ainda precisa ser validado no aparelho.
+No navegador, “Última exportação iniciada” registra o pedido de download. No Android, a cópia só é conferida se a releitura devolver todo o conteúdo. A restauração do Android troca a base e grava as contas vencidas na mesma transação.
 
 Falha de gravação não pode mostrar “Salvo”; falha de leitura não pode trocar dados por exemplos. Atualização exige migração versionada, nunca limpeza do banco.
 

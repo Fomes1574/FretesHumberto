@@ -22,12 +22,16 @@ data class Resumo(
     val diasTrabalhados: Set<LocalDate>,
     val porCategoria: Map<String, Long>,
     val diasMetaAtingida: Int,
+    val combustivelComLitros: Long,
 ) {
     /** R02: lucro = fretes − abastecimentos − outras despesas. Nunca cortado em zero. */
     val lucro: Long get() = fretes - combustivel - outras
 
-    /** Preço médio = soma paga ÷ soma de litros. Null sem litros (não divide por zero). */
-    val precoMedioLitro: Long? get() = if (litrosCentesimos > 0) Dinheiro.roundDiv(big(combustivel) * big(100), big(litrosCentesimos)) else null
+    val pedagio: Long get() = porCategoria[CATEGORIA_PEDAGIO] ?: 0
+    val gastos: Long get() = combustivel + outras
+
+    /** Abastecimentos sem litros entram só no total gasto. */
+    val precoMedioLitro: Long? get() = if (litrosCentesimos > 0) Dinheiro.roundDiv(big(combustivelComLitros) * big(100), big(litrosCentesimos)) else null
 
     /** % do valor dos fretes que foi para o tanque. Null sem fretes. */
     val percentualTanque: Long? get() = if (fretes > 0) Dinheiro.roundDiv(big(combustivel) * big(100), big(fretes)) else null
@@ -48,6 +52,7 @@ object Relatorio {
         selecionadas: Set<LocalDate>? = null,
     ): Resumo {
         var fretes = 0L; var nF = 0; var comb = 0L; var nA = 0; var litros = 0L; var outras = 0L; var km = 0L
+        var combustivelComLitros = 0L
         val dias = HashMap<LocalDate, ResumoDia>()
         val trab = HashSet<LocalDate>()
         val cats = LinkedHashMap<String, Long>()
@@ -57,7 +62,12 @@ object Relatorio {
             val d = dias[l.data] ?: ResumoDia()
             when (l.tipo) {
                 Tipo.FRETE -> { fretes += l.valor; nF++; trab += l.data; km += l.kmCentesimos ?: 0; dias[l.data] = d.copy(fretes = d.fretes + l.valor) }
-                Tipo.ABASTECIMENTO -> { comb += l.valor; nA++; litros += l.litrosCentesimos ?: 0; dias[l.data] = d.copy(combustivel = d.combustivel + l.valor) }
+                Tipo.ABASTECIMENTO -> {
+                    comb += l.valor
+                    nA++
+                    l.litrosCentesimos?.let { litros += it; combustivelComLitros += l.valor }
+                    dias[l.data] = d.copy(combustivel = d.combustivel + l.valor)
+                }
                 Tipo.DESPESA -> {
                     outras += l.valor
                     val c = l.categoria ?: "Outros"
@@ -67,7 +77,7 @@ object Relatorio {
             }
         }
         val metaOk = trab.count { (dias[it]?.lucro ?: 0) >= metas.doDia(it) }
-        return Resumo(fretes, nF, comb, nA, litros, outras, km, dias, trab, cats, metaOk)
+        return Resumo(fretes, nF, comb, nA, litros, outras, km, dias, trab, cats, metaOk, combustivelComLitros)
     }
 }
 
@@ -90,16 +100,21 @@ object Calculadora {
     fun simular(valor: Long, kmCentesimos: Long, kmPorLitroCentesimos: Long, precoLitro: Long, minutos: Int = 0, outrosCustos: Long = 0): Simulacao? {
         if (listOf(valor, kmCentesimos, kmPorLitroCentesimos, precoLitro).any { it <= 0 || it > Dinheiro.MAX }) return null
         if (outrosCustos < 0 || outrosCustos > Dinheiro.MAX || minutos < 0) return null
-        val comb = Dinheiro.roundDiv(big(kmCentesimos) * big(precoLitro), big(kmPorLitroCentesimos))
-        val sobra = valor - comb - outrosCustos
-        return Simulacao(
-            valor = valor,
-            combustivel = comb,
-            sobra = sobra,
-            litrosCentesimos = Dinheiro.roundDiv(big(kmCentesimos) * big(100), big(kmPorLitroCentesimos)),
-            porKm = Dinheiro.roundDiv(big(sobra) * big(100), big(kmCentesimos)),
-            porHora = if (minutos > 0) Dinheiro.roundDiv(big(sobra) * big(60), big(minutos.toLong())) else null,
-        )
+        return try {
+            val comb = Dinheiro.roundDiv(big(kmCentesimos) * big(precoLitro), big(kmPorLitroCentesimos))
+            val sobra = Math.subtractExact(valor - outrosCustos, comb)
+            if (comb > Dinheiro.MAX || sobra !in -Dinheiro.MAX..Dinheiro.MAX) return null
+            Simulacao(
+                valor = valor,
+                combustivel = comb,
+                sobra = sobra,
+                litrosCentesimos = Dinheiro.roundDiv(big(kmCentesimos) * big(100), big(kmPorLitroCentesimos)),
+                porKm = Dinheiro.roundDiv(big(sobra) * big(100), big(kmCentesimos)),
+                porHora = if (minutos > 0) Dinheiro.roundDiv(big(sobra) * big(60), big(minutos.toLong())) else null,
+            )
+        } catch (_: ArithmeticException) {
+            null
+        }
     }
 }
 
@@ -116,7 +131,7 @@ object Combustivel {
             ModoAbastecimento.PRECO -> Abastecimento(Dinheiro.roundDiv(big(valorPago) * big(100), big(auxiliar)), auxiliar)
             ModoAbastecimento.LITROS -> Abastecimento(auxiliar, Dinheiro.roundDiv(big(valorPago) * big(100), big(auxiliar)))
         }
-        return if (r.litrosCentesimos > 0 && r.precoLitro > 0) r else null
+        return if (r.litrosCentesimos in 1..Dinheiro.MAX && r.precoLitro in 1..Dinheiro.MAX) r else null
     }
 
     data class ReferenciaManual(val data: LocalDate, val preco: Long, val carimbo: String = "")

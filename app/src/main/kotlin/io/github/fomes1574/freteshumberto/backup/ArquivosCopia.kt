@@ -2,6 +2,9 @@ package io.github.fomes1574.freteshumberto.backup
 
 import android.content.Context
 import android.net.Uri
+import io.github.fomes1574.freteshumberto.core.Copia
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.io.File
 import java.io.IOException
 
@@ -13,11 +16,11 @@ class ArquivosCopia(private val context: Context) {
     private val preventiva get() = File(context.filesDir, "copias/antes-da-restauracao.fretes")
 
     /**
-     * Grava e confere: lê de volta e compara. Só termina sem exceção se o arquivo
-     * escolhido ficou com o conteúdo completo.
+     * Devolve true quando os bytes escritos puderam ser relidos e conferidos.
      */
-    fun escrever(destino: Uri, conteudo: String) {
+    fun escrever(destino: Uri, conteudo: String): Boolean {
         val bytes = conteudo.toByteArray(Charsets.UTF_8)
+        if (bytes.size > Copia.LIMITE_BYTES) throw IOException("Arquivo grande demais")
         val r = context.contentResolver
         val saida = try {
             r.openOutputStream(destino, "wt")
@@ -31,19 +34,20 @@ class ArquivosCopia(private val context: Context) {
             it.flush()
         }
         val lido = try {
-            r.openInputStream(destino)?.use { it.readBytes() }
+            r.openInputStream(destino)?.use { it.readNBytesCompat(bytes.size + 1) }
         } catch (e: Exception) {
             // Alguns serviços (ex.: nuvem) não deixam ler na hora; a gravação já terminou sem erro.
             null
         }
         if (lido != null && !lido.contentEquals(bytes)) throw IOException("Arquivo gravado incompleto")
+        return lido != null
     }
 
     fun ler(origem: Uri): String {
         val entrada = context.contentResolver.openInputStream(origem) ?: throw IOException("Sem acesso ao arquivo")
         return entrada.use { s ->
-            val bytes = s.readNBytesCompat(LIMITE + 1)
-            if (bytes.size > LIMITE) throw IOException("Arquivo grande demais")
+            val bytes = s.readNBytesCompat(Copia.LIMITE_BYTES + 1)
+            if (bytes.size > Copia.LIMITE_BYTES) throw IOException("Arquivo grande demais")
             String(bytes, Charsets.UTF_8)
         }
     }
@@ -52,10 +56,13 @@ class ArquivosCopia(private val context: Context) {
         val f = preventiva
         f.parentFile?.mkdirs()
         val tmp = File(f.parentFile, f.name + ".tmp")
-        tmp.writeText(conteudo, Charsets.UTF_8)
-        if (!tmp.renameTo(f)) {
-            f.delete()
-            if (!tmp.renameTo(f)) throw IOException("Não foi possível guardar a cópia automática")
+        val bytes = conteudo.toByteArray(Charsets.UTF_8)
+        if (bytes.size > Copia.LIMITE_BYTES) throw IOException("Arquivo grande demais")
+        try {
+            tmp.writeBytes(bytes)
+            Files.move(tmp.toPath(), f.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+        } finally {
+            tmp.delete()
         }
     }
 
@@ -76,8 +83,4 @@ class ArquivosCopia(private val context: Context) {
         return saida.toByteArray()
     }
 
-    private companion object {
-        /** 50 MB: muito acima de anos de lançamentos. */
-        const val LIMITE = 50 * 1024 * 1024
-    }
 }

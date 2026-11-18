@@ -21,6 +21,7 @@ import io.github.fomes1574.freteshumberto.core.DataTexto
 import io.github.fomes1574.freteshumberto.core.Dinheiro
 import io.github.fomes1574.freteshumberto.core.Estado
 import io.github.fomes1574.freteshumberto.core.Formato
+import io.github.fomes1574.freteshumberto.core.Recorrencias
 import io.github.fomes1574.freteshumberto.core.SituacaoConta
 import io.github.fomes1574.freteshumberto.ui.comum.Botao
 import io.github.fomes1574.freteshumberto.ui.comum.BotaoIcone
@@ -78,7 +79,6 @@ fun TelaContas(e: Estado, mes: YearMonth, ocupado: Boolean, acoes: AcoesContas) 
                 s.lancamentoId?.let { id -> BotaoLinha("Ver lançamento", { acoes.verLancamento(id) }) }
             }
         }
-        TextoApagado("As contas são lançadas sozinhas quando a data chega, mesmo se o app ficar fechado. Não há pagamento bancário.")
     }
 }
 
@@ -99,7 +99,10 @@ fun TelaFormConta(
     val v = situacao?.versao
     var nome by rememberSaveable { mutableStateOf(situacao?.descricao ?: "") }
     var valor by rememberSaveable { mutableStateOf(situacao?.let { Formato.paraCampo(it.valor) } ?: "") }
-    var dia by rememberSaveable { mutableStateOf((v?.dia ?: hoje.dayOfMonth).toString()) }
+    var dia by rememberSaveable { mutableStateOf(
+        (situacao?.let { if (it.data != Recorrencias.vencimento(mes, it.versao.dia)) it.data.dayOfMonth else it.versao.dia }
+            ?: hoje.dayOfMonth).toString(),
+    ) }
     var inicio by rememberSaveable { mutableStateOf((situacao?.conta?.inicio ?: hoje).toString()) }
     var fim by rememberSaveable { mutableStateOf(v?.fim?.toString() ?: "") }
     var soEsteMes by rememberSaveable { mutableStateOf(true) }
