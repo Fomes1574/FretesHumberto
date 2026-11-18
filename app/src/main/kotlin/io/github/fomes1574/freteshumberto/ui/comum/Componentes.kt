@@ -134,6 +134,7 @@ fun Botao(
     cor: Color = Color.White,
     ligado: Boolean = true,
     alto: Boolean = false,
+    espacoInterno: PaddingValues = ButtonDefaults.ContentPadding,
 ) {
     Button(
         onClick = aoTocar,
@@ -141,6 +142,7 @@ fun Botao(
         modifier = modifier.fillMaxWidth().heightIn(min = if (alto) 64.dp else 56.dp),
         shape = RoundedCornerShape(16.dp),
         colors = ButtonDefaults.buttonColors(containerColor = fundo, contentColor = cor),
+        contentPadding = espacoInterno,
     ) {
         ConteudoBotao(texto, icone)
     }

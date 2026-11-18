@@ -356,6 +356,15 @@ class FluxosTest {
         esperar("TOTAL DO TRABALHO")
         esperar("R$ 207,00")
         capturar("android-hoje-a3")
+        for (nome in listOf("Combustível", "Pedágio")) {
+            tela.onAllNodes(hasText(nome) and hasClickAction())[0].performScrollTo()
+            val resultados = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+            val rotulo = tela.onAllNodesWithText(nome, useUnmergedTree = true).fetchSemanticsNodes()
+                .first { it.parent?.config?.getOrNull(SemanticsActions.OnClick) != null }
+            rotulo.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(resultados)
+            capturar("android-atalho-${if (nome == "Pedágio") "pedagio" else "combustivel"}-a3")
+            org.junit.Assert.assertEquals("Rótulo deve caber inteiro: $nome", listOf(1), resultados.map { it.lineCount })
+        }
         tocar("Anotar frete")
         esperar("Valor ganho")
         campo(0).performTextInput("85,50")

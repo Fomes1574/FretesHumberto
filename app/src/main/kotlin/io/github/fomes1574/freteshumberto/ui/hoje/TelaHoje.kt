@@ -2,6 +2,7 @@ package io.github.fomes1574.freteshumberto.ui.hoje
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -21,8 +22,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.fomes1574.freteshumberto.R
@@ -144,11 +148,36 @@ private fun LinhaTotal(rotulo: String, valor: Long, cor: Color, gasto: Boolean =
 
 @Composable
 fun AcoesGastos(dia: LocalDate, novo: (Tipo, LocalDate, String?) -> Unit) {
-    Par(
-        { m -> Botao("Combustível", { novo(Tipo.ABASTECIMENTO, dia, null) }, m, R.drawable.ic_combustivel, Cores.Cartao, Cores.Negativo) },
-        { m -> Botao("Pedágio", { novo(Tipo.DESPESA, dia, CATEGORIA_PEDAGIO) }, m, R.drawable.ic_despesa, Cores.Cartao, Cores.Negativo) },
-    )
-    BotaoLinha("Outro gasto", { novo(Tipo.DESPESA, dia, null) })
+    val combustivel = "Combustível"
+    val pedagio = "Pedágio"
+    val margem = 12.dp
+    val espacoInterno = PaddingValues(horizontal = margem, vertical = 8.dp)
+    val botaoCombustivel: @Composable (Modifier) -> Unit = { m ->
+        Botao(combustivel, { novo(Tipo.ABASTECIMENTO, dia, null) }, m, R.drawable.ic_combustivel, Cores.Cartao, Cores.Negativo, espacoInterno = espacoInterno)
+    }
+    val botaoPedagio: @Composable (Modifier) -> Unit = { m ->
+        Botao(pedagio, { novo(Tipo.DESPESA, dia, CATEGORIA_PEDAGIO) }, m, R.drawable.ic_despesa, Cores.Cartao, Cores.Negativo, espacoInterno = espacoInterno)
+    }
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val larguraBotao = (maxWidth - 10.dp) / 2
+        val estilo = MaterialTheme.typography.labelLarge
+        val medidor = rememberTextMeasurer()
+        val larguraTexto = maxOf(
+            medidor.measure(AnnotatedString(combustivel), estilo, softWrap = false).size.width,
+            medidor.measure(AnnotatedString(pedagio), estilo, softWrap = false).size.width,
+        )
+        // Espaço para as margens internas do botão, o ícone e a distância até o texto.
+        val disponivel = with(LocalDensity.current) { (larguraBotao - margem * 2 - 24.dp - 10.dp).roundToPx() }
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (larguraTexto <= disponivel) {
+                Par(botaoCombustivel, botaoPedagio)
+            } else {
+                botaoCombustivel(Modifier)
+                botaoPedagio(Modifier)
+            }
+            BotaoLinha("Outro gasto", { novo(Tipo.DESPESA, dia, null) })
+        }
+    }
 }
 
 @Composable

@@ -36,6 +36,11 @@ button:focus-visible,summary:focus-visible{outline:3px solid #17603F;outline-off
 [data-large=true] .entry .info{flex-basis:100%}
 [data-large=true] .seg{flex-wrap:wrap;gap:4px}
 [data-large=true] .seg button{flex-basis:40%}
+@media(max-width:420px){
+ [data-large=true] .top{margin-bottom:4px}
+ [data-large=true] .total .row{padding-block:7px}
+ [data-large=true] .goal-road .scene{margin-top:4px}
+}
 @media(max-width:380px){.big{font-size:2.1rem}.actions{gap:8px}.wrap{padding-left:12px;padding-right:12px}.card{padding:14px}.btn{padding:10px}.kpi .n{font-size:1.15rem}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.btn:active{transform:none}}
 '''
