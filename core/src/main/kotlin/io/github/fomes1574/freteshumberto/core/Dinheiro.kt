@@ -63,7 +63,10 @@ object Dinheiro {
         require(b.signum() > 0) { "Divisor inválido" }
         val sinal = if (a.signum() < 0) BigInteger.ONE.negate() else BigInteger.ONE
         val v = a * sinal
-        return (sinal * ((v + b / BigInteger.TWO) / b)).longValueExact()
+        val resultado = sinal * ((v + b.shiftRight(1)) / b)
+        // BigInteger.longValueExact só existe no Android a partir da API 31.
+        if (resultado.bitLength() > 63) throw ArithmeticException("Resultado fora do intervalo de Long")
+        return resultado.toLong()
     }
 
     fun valido(c: Long): Boolean = c in 0..MAX

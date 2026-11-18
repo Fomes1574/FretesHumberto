@@ -4,6 +4,7 @@
 
 - Prepara a primeira edição oficial com assinatura permanente e publicação versionada. A publicação verifica o certificado, o identificador e o código de versão do APK.
 - O APK debug fica no artefato de testes do GitHub Actions.
+- Corrige o cálculo usado pelo gráfico de Relatórios e pela calculadora em versões anteriores ao Android 13.
 
 ## 0.2.0 — 18/11/2026
 

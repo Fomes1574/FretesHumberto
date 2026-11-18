@@ -4,8 +4,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.math.BigInteger
 import java.time.LocalDate
 import java.time.YearMonth
 
@@ -61,6 +63,18 @@ class RegrasTest {
         assertEquals(2L, Dinheiro.roundDiv(3, 2))
         assertEquals(-2L, Dinheiro.roundDiv(-3, 2))
         assertEquals(1L, Dinheiro.roundDiv(4, 3))
+    }
+
+    @Test fun `arredondamento preserva os limites de Long e rejeita estouro`() {
+        val limite = BigInteger.ONE.shiftLeft(63)
+        assertEquals(Long.MIN_VALUE, Dinheiro.roundDiv(Long.MIN_VALUE, 1))
+        assertEquals(Long.MAX_VALUE, Dinheiro.roundDiv(Long.MAX_VALUE, 1))
+        assertThrows(ArithmeticException::class.java) {
+            Dinheiro.roundDiv(limite, BigInteger.ONE)
+        }
+        assertThrows(ArithmeticException::class.java) {
+            Dinheiro.roundDiv(limite.negate() - BigInteger.ONE, BigInteger.ONE)
+        }
     }
 
     // ---- Lucro e meta (R02)
